@@ -379,31 +379,63 @@ export default function Landing() {
       </footer>
 
       {/* Demo Modal */}
-      <Modal isOpen={showDemo} onClose={() => setShowDemo(false)} title="Así funciona Math Rush">
-        <div className="space-y-4">
-          <div className="bg-rush-darker rounded-xl p-6 text-center">
-            <div className="text-5xl mb-4">🎬</div>
-            <h3 className="font-bold text-lg mb-2">Video Demostrativo</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              El video demostrativo estará disponible próximamente.
-            </p>
-            <div className="bg-rush-card rounded-lg p-4 text-left">
-              <p className="text-xs text-gray-500 mb-2">El video mostrará:</p>
-              <ul className="text-xs text-gray-400 space-y-1">
-                <li>✓ Landing page y registro</li>
-                <li>✓ Lobby y selección de modos</li>
-                <li>✓ Escáner de ejercicios</li>
-                <li>✓ Gameplay en acción</li>
-                <li>✓ Cuy Sabio (IA)</li>
-                <li>✓ Progreso y tienda</li>
-                <li>✓ Laboratorio IA</li>
-              </ul>
+      <Modal isOpen={showDemo} onClose={() => setShowDemo(false)} title="">
+        <div className="space-y-5">
+          {/* Video Preview Header */}
+          <div className="relative w-full h-48 rounded-xl overflow-hidden bg-gradient-to-br from-rush-darker to-rush-card">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl mb-2">🎬</div>
+                <p className="text-sm text-gray-400">Video Demostrativo</p>
+              </div>
             </div>
-            <p className="text-xs text-rush-orange mt-4">
-              📹 Video pendiente: /assets/demo/math-rush-demo.mp4
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-16 h-16 bg-rush-orange/90 rounded-full flex items-center justify-center shadow-2xl"
+              >
+                <span className="text-white text-2xl ml-1">▶</span>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div>
+            <h3 className="font-display text-2xl font-bold mb-2">Así funciona Math Rush</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Descubre cómo convertir tus ejercicios de matemática en una experiencia de videojuego.
+            </p>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: '🏠', title: 'Landing', desc: 'Registro rápido' },
+              { icon: '🎮', title: 'Lobby', desc: 'Menú de videojuego' },
+              { icon: '📸', title: 'Escáner', desc: 'Foto a juego' },
+              { icon: '⚡', title: 'Gameplay', desc: '5 modos de juego' },
+              { icon: '🐹', title: 'Cuy Sabio', desc: 'IA educativa' },
+              { icon: '🛒', title: 'Tienda', desc: 'Personalización' },
+            ].map((item, i) => (
+              <div key={i} className="card-glass rounded-lg p-3 flex items-center gap-2">
+                <span className="text-2xl">{item.icon}</span>
+                <div>
+                  <p className="text-xs font-bold">{item.title}</p>
+                  <p className="text-[10px] text-gray-500">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Status */}
+          <div className="bg-rush-orange/10 border border-rush-orange/30 rounded-xl p-3">
+            <p className="text-xs text-rush-orange text-center">
+              📹 Video completo próximamente
             </p>
           </div>
           
+          {/* Actions */}
           <div className="grid grid-cols-2 gap-3">
             <Link to="/register">
               <Button variant="primary" className="w-full">Probar Ahora</Button>

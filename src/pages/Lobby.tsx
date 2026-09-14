@@ -110,11 +110,16 @@ export default function LobbyPage() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowModeSelect(true)}
-          className="w-full bg-gradient-to-r from-rush-orange to-rush-orange-dark rounded-2xl p-6 mb-4 shadow-lg shadow-rush-orange/30 animate-pulse-glow"
+          className="w-full rounded-2xl p-6 mb-4 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
+            boxShadow: '0 10px 40px rgba(249, 115, 22, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+          }}
         >
-          <span className="text-4xl mb-2 block">⚡</span>
-          <h2 className="font-display text-2xl font-black">RUSH NOW</h2>
-          <p className="text-white/70 text-sm mt-1">¿Cómo quieres entrenar?</p>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+          <span className="text-4xl mb-2 block relative z-10">⚡</span>
+          <h2 className="font-display text-2xl font-black relative z-10">RUSH NOW</h2>
+          <p className="text-white/80 text-sm mt-1 relative z-10">¿Cómo quieres entrenar?</p>
         </motion.button>
 
         {/* Scan Button */}

@@ -195,14 +195,29 @@ export function Modal({ isOpen, onClose, children, title }: { isOpen: boolean; o
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+      />
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="relative card-glass rounded-3xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="relative card-glass rounded-3xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        style={{
+          background: 'linear-gradient(135deg, rgba(45, 34, 82, 0.98), rgba(26, 18, 48, 0.98))',
+          border: '1px solid rgba(139, 92, 246, 0.3)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(139, 92, 246, 0.1)',
+        }}
         onClick={e => e.stopPropagation()}
       >
-        {title && <h3 className="text-xl font-bold mb-4 font-display">{title}</h3>}
+        {title && (
+          <div className="mb-4">
+            <h3 className="text-xl font-bold font-display bg-gradient-to-r from-rush-orange to-rush-yellow bg-clip-text text-transparent">{title}</h3>
+          </div>
+        )}
         {children}
       </motion.div>
     </div>

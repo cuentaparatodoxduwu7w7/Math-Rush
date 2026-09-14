@@ -21,14 +21,27 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-rush-darker/95 backdrop-blur-md border-t border-rush-purple/20 md:hidden" aria-label="Navegación principal">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden" 
+      aria-label="Navegación principal"
+      style={{
+        background: 'linear-gradient(180deg, rgba(15, 10, 30, 0.95) 0%, rgba(15, 10, 30, 0.99) 100%)',
+        backdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(139, 92, 246, 0.2)',
+        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
+      }}
+    >
+      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
         {links.map(link => (
           <NavLink
             key={link.to}
             to={link.to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${isActive ? 'text-rush-orange scale-105' : 'text-gray-400 hover:text-white'}`
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
+                isActive 
+                  ? 'text-rush-orange scale-110 bg-rush-orange/10' 
+                  : 'text-gray-400 hover:text-white'
+              }`
             }
           >
             <span className="text-xl">{link.icon}</span>
@@ -62,10 +75,16 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-rush-darker/50 border-r border-rush-purple/20 min-h-screen p-4 fixed left-0 top-0 z-30">
-      <div className="flex items-center gap-2 mb-8 px-2">
-        <span className="text-2xl">🐹</span>
-        <h1 className="font-display font-bold text-xl text-rush-orange">MATH RUSH</h1>
+    <aside className="hidden md:flex flex-col w-64 min-h-screen p-4 fixed left-0 top-0 z-30" style={{
+      background: 'linear-gradient(180deg, rgba(26, 18, 48, 0.95) 0%, rgba(15, 10, 30, 0.98) 100%)',
+      borderRight: '1px solid rgba(139, 92, 246, 0.15)',
+      backdropFilter: 'blur(20px)',
+    }}>
+      <div className="flex items-center gap-3 mb-8 px-2 py-2">
+        <div className="w-10 h-10 bg-gradient-to-br from-rush-orange to-rush-yellow rounded-xl flex items-center justify-center shadow-lg shadow-rush-orange/30">
+          <span className="text-xl">🐹</span>
+        </div>
+        <h1 className="font-display font-bold text-xl bg-gradient-to-r from-rush-orange to-rush-yellow bg-clip-text text-transparent">MATH RUSH</h1>
       </div>
       <nav className="flex-1 space-y-1">
         {links.map(link => (
@@ -73,7 +92,11 @@ export function Sidebar() {
             key={link.to}
             to={link.to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-rush-orange/10 text-rush-orange border border-rush-orange/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isActive 
+                  ? 'bg-gradient-to-r from-rush-orange/20 to-rush-orange/5 text-rush-orange border border-rush-orange/30 shadow-lg shadow-rush-orange/10' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`
             }
           >
             <span className="text-lg">{link.icon}</span>
