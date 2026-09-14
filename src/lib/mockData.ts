@@ -34,14 +34,16 @@ export const MOCK_ACHIEVEMENTS: Achievement[] = [
 ];
 
 export const MOCK_SHOP_ITEMS: ShopItem[] = [
-  { id: 's1', name: 'Cuy Gamer', description: 'Skin gamer con lentes y audífonos', icon: '🐹', category: 'skin', price_coins: 500, price_gems: null, is_premium: false },
-  { id: 's2', name: 'Cuy Dorado', description: 'Skin dorada legendaria', icon: '🐹', category: 'skin', price_coins: 2000, price_gems: 50, is_premium: true },
-  { id: 's3', name: 'Cuy Cyberpunk', description: 'Skin futurista con neón', icon: '🐹', category: 'skin', price_coins: 1500, price_gems: 30, is_premium: true },
-  { id: 's4', name: 'Llama Blanca', description: 'Mascota compañera', icon: '🦙', category: 'pet', price_coins: 800, price_gems: null, is_premium: false },
-  { id: 's5', name: 'Fondo Espacial', description: 'Fondo con galaxias y planetas', icon: '🌌', category: 'background', price_coins: 600, price_gems: null, is_premium: false },
-  { id: 's6', name: 'Efecto Relámpago', description: 'Efecto visual al acertar', icon: '⚡', category: 'effect', price_coins: 400, price_gems: null, is_premium: false },
-  { id: 's7', name: 'Fondo Neón', description: 'Fondo estilo cyberpunk', icon: '💜', category: 'background', price_coins: 700, price_gems: 15, is_premium: true },
-  { id: 's8', name: 'Cuy Samurai', description: 'Skin samurái épica', icon: '🐹', category: 'skin', price_coins: 1800, price_gems: 40, is_premium: true },
+  { id: 's1', name: 'Cuy Gamer', description: 'Skin gamer con lentes y audífonos', icon: '🐹', category: 'skin', price_coins: 500, price_gems: null, is_premium: false, image_url: 'https://image.qwenlm.ai/generated-images/88ab4c3a-01d1-41c4-b17e-2e84faabf6ed/_result.png' },
+  { id: 's2', name: 'Cuy Dorado', description: 'Skin dorada legendaria', icon: '🐹', category: 'skin', price_coins: 2000, price_gems: 50, is_premium: true, image_url: 'https://image.qwenlm.ai/generated-images/a10a7b6c-a6e8-4a96-99a6-ed451da3f033/_result.png' },
+  { id: 's3', name: 'Cuy Cyberpunk', description: 'Skin futurista con neón', icon: '🐹', category: 'skin', price_coins: 1500, price_gems: 30, is_premium: true, image_url: 'https://image.qwenlm.ai/generated-images/1a9a7a35-400d-4b78-a880-0247f3368945/_result.png' },
+  { id: 's4', name: 'Llama Blanca', description: 'Mascota compañera', icon: '🦙', category: 'pet', price_coins: 800, price_gems: null, is_premium: false, image_url: 'https://image.qwenlm.ai/generated-images/4008da11-eb13-4253-b822-7c6ddae70000/_result.png' },
+  { id: 's5', name: 'Fondo Espacial', description: 'Fondo con galaxias y planetas', icon: '🌌', category: 'background', price_coins: 600, price_gems: null, is_premium: false, image_url: 'https://image.qwenlm.ai/generated-images/3468e72c-4148-4f9a-8565-9bc4c720942d/_result.png' },
+  { id: 's6', name: 'Efecto Relámpago', description: 'Efecto visual al acertar', icon: '⚡', category: 'effect', price_coins: 400, price_gems: null, is_premium: false, image_url: null },
+  { id: 's7', name: 'Fondo Neón', description: 'Fondo estilo cyberpunk', icon: '💜', category: 'background', price_coins: 700, price_gems: 15, is_premium: true, image_url: 'https://image.qwenlm.ai/generated-images/2f848f42-dfbb-47e8-ae21-15fdae7d3843/_result.png' },
+  { id: 's8', name: 'Cuy Samurai', description: 'Skin samurái épica', icon: '🐹', category: 'skin', price_coins: 1800, price_gems: 40, is_premium: true, image_url: 'https://image.qwenlm.ai/generated-images/e30ef96a-31cb-49e5-8ea7-1dccc0c93f14/_result.png' },
+  { id: 's9', name: 'Fondo Matemático', description: 'Fondo con formas geométricas', icon: '📐', category: 'background', price_coins: 550, price_gems: null, is_premium: false, image_url: 'https://image.qwenlm.ai/generated-images/f9b90eb8-0f91-4f1a-9fe1-4c3525451032/_result.png' },
+  { id: 's10', name: 'Fondo Naturaleza', description: 'Fondo de bosque educativo', icon: '🌿', category: 'background', price_coins: 500, price_gems: null, is_premium: false, image_url: 'https://image.qwenlm.ai/generated-images/52ebb24b-1a72-466e-a214-e74ee4affcdc/_result.png' },
 ];
 
 export const MOCK_PLANS: Plan[] = [

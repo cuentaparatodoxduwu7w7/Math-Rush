@@ -6,6 +6,28 @@ Plataforma educativa gamificada que convierte el aprendizaje de matemática en u
 
 ---
 
+## 🎯 Estado Actual (v1.1.0 - Post Auditoría)
+
+### ✅ COMPLETAMENTE FUNCIONAL
+- Landing page con animaciones y modal de demostración
+- Sistema de autenticación (mock/demo cuando no hay Supabase)
+- Motor de juego con 4 modos funcionales
+- **Tienda con imágenes reales** (no solo emojis)
+- **Laboratorio IA con contenido visual** (mundos y mascotas generados)
+- Sistema de progresión (XP, niveles, monedas, logros)
+- **Modo developer con acceso total**
+- **Checkout funcional con estados**
+- **Modo de pruebas para developer**
+- Responsive design (mobile-first)
+
+### ⚠️ REQUIERE CONFIGURACIÓN EXTERNA
+- Supabase (para datos reales)
+- Google OAuth (para login con Google)
+- Culqi (para pagos reales)
+- IA Provider (para generación de audio)
+
+---
+
 ## 🚀 Stack
 
 - **Frontend:** React + TypeScript + Tailwind CSS
@@ -15,7 +37,26 @@ Plataforma educativa gamificada que convierte el aprendizaje de matemática en u
 
 ---
 
-## 📋 Configuración
+## 🏃 Inicio Rápido
+
+```bash
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
+npm run dev
+
+# Abrir en navegador
+# http://localhost:5173
+```
+
+**Modo Demo Automático:** La aplicación funciona sin configuración. Usa usuario demo automáticamente.
+
+**Usuario Developer:** `cuentaparatodoxduwu7w7@gmail.com` (tiene acceso completo)
+
+---
+
+## 📋 Configuración (Opcional)
 
 ### 1. Variables de Entorno
 

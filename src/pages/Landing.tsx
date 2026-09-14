@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button } from '../components/ui';
+import { Button, Modal } from '../components/ui';
 
 // ============================================================
 // LANDING PAGE
@@ -66,6 +66,8 @@ function Particles() {
 }
 
 export default function Landing() {
+  const [showDemo, setShowDemo] = useState(false);
+
   return (
     <div className="min-h-screen bg-rush-dark overflow-hidden">
       {/* HERO */}
@@ -137,7 +139,7 @@ export default function Landing() {
                 ⚡ EMPEZAR GRATIS
               </Button>
             </Link>
-            <Button variant="outline" size="xl" className="w-full sm:w-auto">
+            <Button variant="outline" size="xl" className="w-full sm:w-auto" onClick={() => setShowDemo(true)}>
               ▶ VER CÓMO FUNCIONA
             </Button>
           </div>
@@ -375,6 +377,43 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* Demo Modal */}
+      <Modal isOpen={showDemo} onClose={() => setShowDemo(false)} title="Así funciona Math Rush">
+        <div className="space-y-4">
+          <div className="bg-rush-darker rounded-xl p-6 text-center">
+            <div className="text-5xl mb-4">🎬</div>
+            <h3 className="font-bold text-lg mb-2">Video Demostrativo</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              El video demostrativo estará disponible próximamente.
+            </p>
+            <div className="bg-rush-card rounded-lg p-4 text-left">
+              <p className="text-xs text-gray-500 mb-2">El video mostrará:</p>
+              <ul className="text-xs text-gray-400 space-y-1">
+                <li>✓ Landing page y registro</li>
+                <li>✓ Lobby y selección de modos</li>
+                <li>✓ Escáner de ejercicios</li>
+                <li>✓ Gameplay en acción</li>
+                <li>✓ Cuy Sabio (IA)</li>
+                <li>✓ Progreso y tienda</li>
+                <li>✓ Laboratorio IA</li>
+              </ul>
+            </div>
+            <p className="text-xs text-rush-orange mt-4">
+              📹 Video pendiente: /assets/demo/math-rush-demo.mp4
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/register">
+              <Button variant="primary" className="w-full">Probar Ahora</Button>
+            </Link>
+            <Button variant="outline" className="w-full" onClick={() => setShowDemo(false)}>
+              Cerrar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

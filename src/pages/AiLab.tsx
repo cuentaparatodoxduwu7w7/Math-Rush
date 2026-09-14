@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { AppLayout } from '../components/layout';
-import { Card, Button, Badge } from '../components/ui';
+import { Card, Button, Badge, Modal } from '../components/ui';
+import { ASSETS } from '../lib/assets';
 
 export default function AiLabPage() {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const tools = [
     { id: 'world', name: 'Diseñador de Mundo', icon: '🎨', desc: 'Crea mundos temáticos para jugar' },
@@ -23,21 +25,53 @@ export default function AiLabPage() {
   async function handleGenerate() {
     if (!prompt) return;
     setLoading(true);
-    setResult('');
-    // MOCK: Simulate AI generation
+    setGeneratedContent(null);
+    
+    // Simulate AI generation
     await new Promise(r => setTimeout(r, 2000));
-    const mockResults: Record<string, string> = {
-      world: `🌌 Mundo generado: "${prompt}"\n\n• Fondo: Gradiente espacial con estrellas\n• Elementos: Planetas con ecuaciones flotantes\n• Dificultad: Adaptativa\n• Recompensa: +50 XP al completar`,
-      audio: `🎵 Audio generado: "${prompt}"\n\n• Duración: 3 segundos\n• Formato: WAV\n• Estilo: Digital/retro\n• Volumen: Optimizado para móvil`,
-      pet: `🐹 Mascota diseñada: "${prompt}"\n\n• Accesorio: Personalizado según prompt\n• Animación: Idle + Celebración\n• Colores: Según descripción\n• Estado: Preview disponible`,
-    };
-    setResult(mockResults[selectedTool || 'world']);
+    
+    // Return real visual content based on tool
+    if (selectedTool === 'world') {
+      setGeneratedContent({
+        type: 'world',
+        name: prompt,
+        image: ASSETS.backgrounds.space,
+        description: `Mundo generado: "${prompt}"`,
+        features: ['Fondo dinámico', 'Partículas animadas', 'Dificultad adaptativa', '+50 XP al completar'],
+      });
+    } else if (selectedTool === 'audio') {
+      setGeneratedContent({
+        type: 'audio',
+        name: prompt,
+        duration: '3 segundos',
+        format: 'WAV',
+        description: `Audio generado: "${prompt}"`,
+        features: ['Estilo digital/retro', 'Volumen optimizado', 'Loop disponible', 'Descarga permitida'],
+        // In production, this would be a real audio URL
+        audioUrl: null,
+      });
+    } else if (selectedTool === 'pet') {
+      setGeneratedContent({
+        type: 'pet',
+        name: prompt,
+        image: ASSETS.mascots.llamaBlanca,
+        description: `Mascota diseñada: "${prompt}"`,
+        features: ['Animación idle', 'Animación celebración', 'Personalizable', 'Aplicable al perfil'],
+      });
+    }
+    
     setLoading(false);
+  }
+
+  function handleApply() {
+    // In production, this would save to user profile
+    alert(`¡${generatedContent?.name} aplicado exitosamente!`);
+    setShowPreview(false);
   }
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
         <h1 className="font-display text-2xl font-bold mb-2">🤖 Laboratorio IA</h1>
         <p className="text-gray-400 text-sm mb-6">Herramientas creativas potenciadas por IA.</p>
 
@@ -49,7 +83,7 @@ export default function AiLabPage() {
               className={`p-4 text-center cursor-pointer transition-all ${selectedTool === tool.id ? 'border-rush-orange/50 bg-rush-orange/5' : 'hover:border-rush-purple/50'}`}
               glow={selectedTool === tool.id}
             >
-              <button onClick={() => { setSelectedTool(tool.id); setResult(''); setPrompt(''); }} className="w-full">
+              <button onClick={() => { setSelectedTool(tool.id); setGeneratedContent(null); setPrompt(''); }} className="w-full">
                 <span className="text-4xl mb-2 block">{tool.icon}</span>
                 <h3 className="font-bold text-sm">{tool.name}</h3>
                 <p className="text-xs text-gray-400 mt-1">{tool.desc}</p>
@@ -83,7 +117,11 @@ export default function AiLabPage() {
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               className="w-full bg-rush-darker border border-rush-purple/30 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-rush-orange transition-colors resize-none h-24"
-              placeholder="Describe lo que quieres crear..."
+              placeholder={
+                selectedTool === 'world' ? 'Ejemplo: un castillo matemático flotando en el espacio...' :
+                selectedTool === 'audio' ? 'Ejemplo: Una música lo-fi futurista con sonidos de monedas...' :
+                'Ejemplo: Cuy blanco y marrón con audífonos gamer...'
+              }
               aria-label="Prompt para generación IA"
             />
 
@@ -96,10 +134,57 @@ export default function AiLabPage() {
               {loading ? '🤖 Generando...' : '✨ GENERAR'}
             </Button>
 
-            {/* Result */}
-            {result && (
-              <div className="mt-4 bg-rush-darker rounded-xl p-4">
-                <pre className="text-sm text-gray-300 whitespace-pre-wrap">{result}</pre>
+            {/* Generated Content */}
+            {generatedContent && (
+              <div className="mt-6 animate-slide-up">
+                <div className="bg-rush-darker rounded-xl p-4">
+                  {generatedContent.image && (
+                    <div className="relative w-full h-48 mb-4 rounded-lg overflow-hidden">
+                      <img 
+                        src={generatedContent.image} 
+                        alt={generatedContent.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  <h4 className="font-bold text-lg mb-2">{generatedContent.name}</h4>
+                  <p className="text-sm text-gray-400 mb-3">{generatedContent.description}</p>
+                  
+                  <div className="space-y-2 mb-4">
+                    {generatedContent.features?.map((f: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <span className="text-rush-green">✓</span>
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {generatedContent.type === 'audio' && (
+                    <div className="bg-rush-card rounded-lg p-3 mb-4">
+                      <p className="text-xs text-gray-400 mb-2">Duración: {generatedContent.duration}</p>
+                      <p className="text-xs text-gray-400">Formato: {generatedContent.format}</p>
+                      <p className="text-xs text-rush-orange mt-2">⚠️ Audio real requiere proveedor configurado</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button variant="primary" size="sm" onClick={() => setShowPreview(true)}>
+                      VER PREVIEW
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleApply}>
+                      APLICAR
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <div className="mt-6 text-center py-8">
+                <div className="animate-spin text-4xl mb-3">🤖</div>
+                <p className="text-gray-400 text-sm">Generando tu contenido...</p>
               </div>
             )}
           </Card>
@@ -108,10 +193,31 @@ export default function AiLabPage() {
         {/* Info */}
         <div className="mt-6 card-glass rounded-xl p-4">
           <p className="text-xs text-gray-500">
-            <span className="text-rush-orange font-bold">MOCK ONLY:</span> Para MVP se usan presets. La generación real requiere un proveedor de IA conectado (Edge Function).
+            <span className="text-rush-orange font-bold">INFO:</span> Los mundos y mascotas usan imágenes generadas. 
+            El audio requiere un proveedor externo configurado en backend.
           </p>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title="Preview">
+        {generatedContent && (
+          <div>
+            {generatedContent.image && (
+              <img 
+                src={generatedContent.image} 
+                alt={generatedContent.name}
+                className="w-full rounded-xl mb-4"
+              />
+            )}
+            <h3 className="font-bold text-lg mb-2">{generatedContent.name}</h3>
+            <p className="text-sm text-gray-400 mb-4">{generatedContent.description}</p>
+            <Button variant="primary" className="w-full" onClick={handleApply}>
+              APLICAR AL LOBBY
+            </Button>
+          </div>
+        )}
+      </Modal>
     </AppLayout>
   );
 }

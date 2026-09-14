@@ -28,9 +28,15 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   entitlements: UserEntitlements;
+  activateDeveloperMode: () => void;
+  deactivateDeveloperMode: () => void;
+  isDeveloper: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// DEVELOPER EMAIL - Validated by backend/RLS in production
+const DEVELOPER_EMAIL = 'cuentaparatodoxduwu7w7@gmail.com';
 
 // MOCK user for development when Supabase is not configured
 const MOCK_USER: Profile = {
@@ -51,6 +57,19 @@ const MOCK_USER: Profile = {
   onboarding_completed: true,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: new Date().toISOString(),
+};
+
+// DEVELOPER MOCK USER - Has full access for testing
+const DEVELOPER_MOCK_USER: Profile = {
+  ...MOCK_USER,
+  id: 'developer-user-001',
+  email: DEVELOPER_EMAIL,
+  nickname: 'Developer',
+  role: 'developer' as UserRole,
+  level: 50,
+  xp: 50000,
+  coins: 99999,
+  gems: 999,
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -223,6 +242,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user?.role === 'developer' ? 'developer' : 'free'
   );
 
+  const isDeveloper = user?.email === DEVELOPER_EMAIL || user?.role === 'developer';
+
+  const activateDeveloperMode = useCallback(() => {
+    // Only allow if user email matches developer email
+    if (user?.email === DEVELOPER_EMAIL) {
+      setUser(DEVELOPER_MOCK_USER);
+    }
+  }, [user]);
+
+  const deactivateDeveloperMode = useCallback(() => {
+    if (user?.email === DEVELOPER_EMAIL) {
+      setUser({ ...MOCK_USER, email: DEVELOPER_EMAIL, role: 'student' });
+    }
+  }, [user]);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -235,6 +269,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       resetPassword,
       updateProfile,
       entitlements,
+      activateDeveloperMode,
+      deactivateDeveloperMode,
+      isDeveloper,
     }}>
       {children}
     </AuthContext.Provider>

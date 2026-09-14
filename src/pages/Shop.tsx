@@ -63,20 +63,36 @@ export default function ShopPage() {
             const owned = inventory.includes(item.id);
             return (
               <div key={item.id} onClick={() => setSelectedItem(item)} className="cursor-pointer">
-<Card className="p-4 text-center hover:border-rush-orange/50 transition-all">
-                <span className="text-4xl mb-2 block">{item.icon}</span>
-                <h3 className="font-bold text-sm mb-1">{item.name}</h3>
-                <p className="text-xs text-gray-400 mb-2 line-clamp-1">{item.description}</p>
-                {owned ? (
-                  <Badge color="green">✓ Adquirido</Badge>
-                ) : (
-                  <div className="flex items-center justify-center gap-1">
-                    <span className="text-sm font-bold text-rush-yellow">🪙 {item.price_coins}</span>
-                    {item.is_premium && <Badge color="purple">PREMIUM</Badge>}
+                <Card className="p-4 text-center hover:border-rush-orange/50 transition-all">
+                  {item.image_url ? (
+                    <div className="relative w-full h-32 mb-3 rounded-lg overflow-hidden bg-rush-darker">
+                      <img 
+                        src={item.image_url} 
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                      <span className="hidden text-4xl absolute inset-0 flex items-center justify-center">{item.icon}</span>
+                    </div>
+                  ) : (
+                    <span className="text-4xl mb-3 block">{item.icon}</span>
+                  )}
+                  <h3 className="font-bold text-sm mb-1">{item.name}</h3>
+                  <p className="text-xs text-gray-400 mb-2 line-clamp-1">{item.description}</p>
+                  {owned ? (
+                    <Badge color="green">✓ Adquirido</Badge>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-sm font-bold text-rush-yellow">🪙 {item.price_coins}</span>
+                      {item.is_premium && <Badge color="purple">PREMIUM</Badge>}
+                    </div>
+                  )}
+                </Card>
               </div>
-            )}
-          </Card>
-        </div>            );
+            );
           })}
         </div>
 
@@ -84,7 +100,22 @@ export default function ShopPage() {
         <Modal isOpen={!!selectedItem} onClose={() => setSelectedItem(null)} title={selectedItem?.name}>
           {selectedItem && (
             <div className="text-center">
-              <span className="text-6xl mb-4 block">{selectedItem.icon}</span>
+              {selectedItem.image_url ? (
+                <div className="relative w-full h-48 mb-4 rounded-xl overflow-hidden bg-rush-darker">
+                  <img 
+                    src={selectedItem.image_url} 
+                    alt={selectedItem.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <span className="hidden text-6xl absolute inset-0 flex items-center justify-center">{selectedItem.icon}</span>
+                </div>
+              ) : (
+                <span className="text-6xl mb-4 block">{selectedItem.icon}</span>
+              )}
               <p className="text-gray-400 mb-4">{selectedItem.description}</p>
               <div className="flex items-center justify-center gap-4 mb-6">
                 <span className="text-lg font-bold text-rush-yellow">🪙 {selectedItem.price_coins}</span>
@@ -114,7 +145,22 @@ export default function ShopPage() {
           <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
             {MOCK_SHOP_ITEMS.filter(item => inventory.includes(item.id)).map(item => (
               <Card key={item.id} className="p-3 text-center border-rush-green/30">
-                <span className="text-3xl">{item.icon}</span>
+                {item.image_url ? (
+                  <div className="relative w-full h-20 mb-1 rounded-lg overflow-hidden bg-rush-darker">
+                    <img 
+                      src={item.image_url} 
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                    <span className="hidden text-2xl absolute inset-0 flex items-center justify-center">{item.icon}</span>
+                  </div>
+                ) : (
+                  <span className="text-3xl">{item.icon}</span>
+                )}
                 <p className="text-xs font-medium mt-1">{item.name}</p>
               </Card>
             ))}

@@ -164,6 +164,8 @@ export interface ShopItem {
   price_coins: number;
   price_gems: number | null;
   is_premium: boolean;
+  image_url?: string | null;
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
 export interface UserEntitlements {

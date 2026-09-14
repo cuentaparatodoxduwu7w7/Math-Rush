@@ -9,7 +9,7 @@ import { getLevelInfo } from '../lib/mockData';
 import { GameMode, Difficulty } from '../lib/supabase';
 
 export default function LobbyPage() {
-  const { user } = useAuth();
+  const { user, isDeveloper } = useAuth();
   const { startGame } = useGame();
   const navigate = useNavigate();
   const [showModeSelect, setShowModeSelect] = useState(false);
@@ -67,6 +67,24 @@ export default function LobbyPage() {
             </div>
           </div>
         </div>
+
+        {/* Developer Banner */}
+        {isDeveloper && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 bg-gradient-to-r from-rush-orange/20 to-rush-purple/20 border border-rush-orange/30 rounded-xl p-3"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🛠️</span>
+              <div className="flex-1">
+                <p className="font-bold text-sm text-rush-orange">Modo Developer Activo</p>
+                <p className="text-xs text-gray-400">Acceso completo a todas las funciones</p>
+              </div>
+              <Badge color="orange">DEV</Badge>
+            </div>
+          </motion.div>
+        )}
 
         {/* XP Bar */}
         <XPBar current={user.xp} max={levelInfo.nextLevelXp} level={levelInfo.level} name={levelInfo.name} className="mb-6" />
