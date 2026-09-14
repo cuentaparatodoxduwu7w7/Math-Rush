@@ -2,12 +2,25 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '../components/layout';
 import { Card, Button, Badge, Modal } from '../components/ui';
-import { ASSETS } from '../lib/assets';
+import { useAI } from '../hooks/useAI';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AiLabPage() {
+  const { user } = useAuth();
+  const { 
+    loading, 
+    error, 
+    retryable, 
+    generateImage, 
+    generateAudio, 
+    generateMascot,
+    clearError,
+    getUsage,
+    getLimits,
+  } = useAI();
+
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
@@ -67,52 +80,60 @@ export default function AiLabPage() {
   };
 
   async function handleGenerate() {
-    if (!prompt) return;
-    setLoading(true);
+    if (!prompt || !selectedTool) return;
+    
+    clearError();
     setGeneratedContent(null);
-    
-    // Simulate AI generation
-    await new Promise(r => setTimeout(r, 2500));
-    
-    // Return real visual content based on tool
+
+    let result;
     if (selectedTool === 'world') {
-      const newContent = {
-        type: 'world',
-        name: prompt,
-        image: ASSETS.backgrounds.space,
-        description: `Mundo generado: "${prompt}"`,
-        features: ['Fondo dinámico', 'Partículas animadas', 'Dificultad adaptativa', '+50 XP al completar'],
-        timestamp: Date.now(),
-      };
-      setGeneratedContent(newContent);
-      setHistory([newContent, ...history].slice(0, 10));
+      result = await generateImage(prompt, { quality: 'high' });
+      if (result) {
+        const content = {
+          type: 'world',
+          name: prompt,
+          image: result.url,
+          description: `Mundo generado: "${prompt}"`,
+          features: ['Fondo dinámico', 'Partículas animadas', 'Dificultad adaptativa', '+50 XP al completar'],
+          timestamp: Date.now(),
+          provider: result.provider,
+        };
+        setGeneratedContent(content);
+        setHistory([content, ...history].slice(0, 10));
+      }
     } else if (selectedTool === 'audio') {
-      const newContent = {
-        type: 'audio',
-        name: prompt,
-        duration: '3 segundos',
-        format: 'WAV',
-        description: `Audio generado: "${prompt}"`,
-        features: ['Estilo digital/retro', 'Volumen optimizado', 'Loop disponible', 'Descarga permitida'],
-        audioUrl: null,
-        timestamp: Date.now(),
-      };
-      setGeneratedContent(newContent);
-      setHistory([newContent, ...history].slice(0, 10));
+      result = await generateAudio(prompt);
+      if (result) {
+        const content = {
+          type: 'audio',
+          name: prompt,
+          audioUrl: result.url,
+          duration: `${result.duration.toFixed(1)}s`,
+          format: result.format,
+          description: `Audio generado: "${prompt}"`,
+          features: ['Reproductor integrado', 'Loop disponible', 'Descarga permitida', 'Aplicable a juegos'],
+          timestamp: Date.now(),
+          provider: result.provider,
+        };
+        setGeneratedContent(content);
+        setHistory([content, ...history].slice(0, 10));
+      }
     } else if (selectedTool === 'pet') {
-      const newContent = {
-        type: 'pet',
-        name: prompt,
-        image: ASSETS.mascots.llamaBlanca,
-        description: `Mascota diseñada: "${prompt}"`,
-        features: ['Animación idle', 'Animación celebración', 'Personalizable', 'Aplicable al perfil'],
-        timestamp: Date.now(),
-      };
-      setGeneratedContent(newContent);
-      setHistory([newContent, ...history].slice(0, 10));
+      result = await generateMascot(prompt, { style: 'cartoon' });
+      if (result) {
+        const content = {
+          type: 'pet',
+          name: result.name,
+          image: result.imageUrl,
+          description: `Mascota diseñada: "${prompt}"`,
+          features: ['Animación idle', 'Animación celebración', 'Personalizable', 'Aplicable al perfil'],
+          timestamp: Date.now(),
+          provider: result.provider,
+        };
+        setGeneratedContent(content);
+        setHistory([content, ...history].slice(0, 10));
+      }
     }
-    
-    setLoading(false);
   }
 
   function handleApply() {
@@ -124,6 +145,11 @@ export default function AiLabPage() {
     alert(`¡${generatedContent?.name} guardado en tu colección!`);
   }
 
+  const limits = getLimits();
+  const imageUsage = getUsage('image');
+  const audioUsage = getUsage('audio');
+  const mascotUsage = getUsage('mascot');
+
   return (
     <AppLayout>
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
@@ -131,6 +157,37 @@ export default function AiLabPage() {
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold mb-2">🤖 Laboratorio IA</h1>
           <p className="text-gray-400">Herramientas creativas potenciadas por inteligencia artificial</p>
+        </div>
+
+        {/* Usage Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">🎨</span>
+              <Badge color={imageUsage >= limits.imagePerDay ? 'red' : 'green'}>
+                {imageUsage}/{limits.imagePerDay}
+              </Badge>
+            </div>
+            <p className="text-xs text-gray-400">Imágenes hoy</p>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">🎵</span>
+              <Badge color={audioUsage >= limits.audioPerDay ? 'red' : 'green'}>
+                {audioUsage}/{limits.audioPerDay}
+              </Badge>
+            </div>
+            <p className="text-xs text-gray-400">Audios hoy</p>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">🐹</span>
+              <Badge color={mascotUsage >= limits.mascotPerDay ? 'red' : 'green'}>
+                {mascotUsage}/{limits.mascotPerDay}
+              </Badge>
+            </div>
+            <p className="text-xs text-gray-400">Mascotas hoy</p>
+          </Card>
         </div>
 
         {!selectedTool ? (
@@ -167,7 +224,7 @@ export default function AiLabPage() {
           >
             {/* Back Button */}
             <button
-              onClick={() => { setSelectedTool(null); setGeneratedContent(null); setPrompt(''); }}
+              onClick={() => { setSelectedTool(null); setGeneratedContent(null); setPrompt(''); clearError(); }}
               className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
               <span>←</span>
@@ -188,6 +245,34 @@ export default function AiLabPage() {
                 </div>
               </div>
             </div>
+
+            {/* Error Message */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-red-500/10 border border-red-500/30 rounded-xl p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div className="flex-1">
+                      <p className="font-bold text-red-400 mb-1">Error</p>
+                      <p className="text-sm text-red-300">{error}</p>
+                      {retryable && (
+                        <Button variant="outline" size="sm" className="mt-3" onClick={handleGenerate}>
+                          Reintentar
+                        </Button>
+                      )}
+                    </div>
+                    <button onClick={clearError} className="text-red-400 hover:text-red-300">
+                      ✕
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Input Section */}
             <div className="card-glass rounded-2xl p-6">
@@ -255,7 +340,7 @@ export default function AiLabPage() {
                       className="h-full bg-gradient-to-r from-rush-orange to-rush-purple rounded-full"
                       initial={{ width: '0%' }}
                       animate={{ width: '100%' }}
-                      transition={{ duration: 2.5 }}
+                      transition={{ duration: 3 }}
                     />
                   </div>
                 </motion.div>
@@ -287,6 +372,16 @@ export default function AiLabPage() {
                     </div>
                   )}
 
+                  {/* Audio Player */}
+                  {generatedContent.audioUrl && (
+                    <div className="bg-rush-darker rounded-xl p-4 mb-4">
+                      <audio controls className="w-full">
+                        <source src={generatedContent.audioUrl} type="audio/wav" />
+                        Tu navegador no soporta audio.
+                      </audio>
+                    </div>
+                  )}
+
                   <h4 className="font-bold text-lg mb-2">{generatedContent.name}</h4>
                   <p className="text-sm text-gray-400 mb-4">{generatedContent.description}</p>
                   
@@ -300,20 +395,12 @@ export default function AiLabPage() {
                     ))}
                   </div>
 
-                  {/* Audio Info */}
-                  {generatedContent.type === 'audio' && (
-                    <div className="bg-rush-darker rounded-xl p-4 mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-400">Duración:</span>
-                        <span className="font-bold">{generatedContent.duration}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">Formato:</span>
-                        <span className="font-bold">{generatedContent.format}</span>
-                      </div>
-                      <p className="text-xs text-rush-orange mt-3">⚠️ Audio real requiere proveedor externo configurado</p>
-                    </div>
-                  )}
+                  {/* Provider Info */}
+                  <div className="bg-rush-darker/50 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-gray-500">
+                      Generado por: <span className="text-rush-purple-light">{generatedContent.provider}</span>
+                    </p>
+                  </div>
 
                   {/* Actions */}
                   <div className="grid grid-cols-3 gap-3">
@@ -367,6 +454,11 @@ export default function AiLabPage() {
                 alt={generatedContent.name}
                 className="w-full rounded-xl mb-4"
               />
+            )}
+            {generatedContent.audioUrl && (
+              <audio controls className="w-full mb-4">
+                <source src={generatedContent.audioUrl} type="audio/wav" />
+              </audio>
             )}
             <h3 className="font-display text-xl font-bold mb-2">{generatedContent.name}</h3>
             <p className="text-sm text-gray-400 mb-4">{generatedContent.description}</p>
