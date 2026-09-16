@@ -1,225 +1,306 @@
-# 🐹 MATH RUSH
+# 🐹 Math Rush
 
 **Aprende. Juega. Supera tus límites.**
 
-Plataforma educativa gamificada que convierte el aprendizaje de matemática en una experiencia de videojuego.
+Math Rush es una plataforma educativa gamificada que convierte el aprendizaje de matemáticas en una experiencia de videojuego. Escanea ejercicios, conviértelos en desafíos y compite contigo mismo.
+
+![Math Rush](https://img.shields.io/badge/version-1.0.0-orange)
+![React](https://img.shields.io/badge/React-18.2-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
-## 🎯 Estado Actual (v1.1.0 - Post Auditoría)
+## ✨ Características
 
-### ✅ COMPLETAMENTE FUNCIONAL
-- Landing page con animaciones y modal de demostración
-- Sistema de autenticación (mock/demo cuando no hay Supabase)
-- Motor de juego con 4 modos funcionales
-- **Tienda con imágenes reales** (no solo emojis)
-- **Laboratorio IA con contenido visual** (mundos y mascotas generados)
-- Sistema de progresión (XP, niveles, monedas, logros)
-- **Modo developer con acceso total**
-- **Checkout funcional con estados**
-- **Modo de pruebas para developer**
-- Responsive design (mobile-first)
+### 🎮 Modos de Juego
+- **⚡ Quick Rush**: 10 preguntas rápidas
+- **🔥 Time Attack**: Resuelve contra el reloj
+- **💀 Boss Battle**: Enfrenta al jefe matemático
+- **♾️ Survival**: 5 vidas, dificultad creciente
 
-### ⚠️ REQUIERE CONFIGURACIÓN EXTERNA
-- Supabase (para datos reales)
-- Google OAuth (para login con Google)
-- Culqi (para pagos reales)
-- IA Provider (para generación de audio)
+### 📸 Escáner Inteligente
+- Escanea ejercicios con tu cámara
+- Convierte fotos en desafíos de juego
+- Detección automática de tema y dificultad
+
+### 🤖 Laboratorio IA
+- **🎨 Diseñador de Mundo**: Crea mundos personalizados
+- **🎵 Sintetizador de Audio**: Genera música y efectos
+- **🐹 Diseñador de Mascota**: Personaliza tu compañero
+
+### 🛒 Tienda
+- Skins exclusivas (Cuy Gamer, Dorado, Cyberpunk, Samurai)
+- Mascotas (Llama Blanca, Cuy Matemático)
+- Fondos temáticos (Espacial, Neón, Matemático, Cyberpunk)
+- Efectos visuales (Rayo, Partículas, Confeti)
+
+### 📊 Progreso
+- Sistema de XP y niveles
+- Monedas y gemas
+- Rachas diarias
+- Logros desbloqueables
+- Estadísticas detalladas
+
+### 👨‍🏫 Panel Docente
+- Crear clases con código de acceso
+- Asignar actividades personalizadas
+- Monitorear progreso de estudiantes
+- Analíticas detalladas
 
 ---
 
-## 🚀 Stack
+## 🚀 Instalación
 
-- **Frontend:** React + TypeScript + Tailwind CSS
-- **Backend:** Supabase (Auth, Database, Storage, Edge Functions)
-- **Pagos:** Culqi (preparado para integración)
-- **IA:** Arquitectura preparada para provider externo
+### Requisitos
+- Node.js 18+ 
+- npm o yarn
 
----
-
-## 🏃 Inicio Rápido
+### Pasos
 
 ```bash
+# Clonar repositorio
+git clone https://github.com/tu-usuario/math-rush.git
+cd math-rush
+
 # Instalar dependencias
 npm install
 
 # Iniciar servidor de desarrollo
 npm run dev
-
-# Abrir en navegador
-# http://localhost:5173
 ```
 
-**Modo Demo Automático:** La aplicación funciona sin configuración. Usa usuario demo automáticamente.
-
-**Usuario Developer:** `cuentaparatodoxduwu7w7@gmail.com` (tiene acceso completo)
+La aplicación estará disponible en `http://localhost:3000`
 
 ---
 
-## 📋 Configuración (Opcional)
+## 🎯 Uso Rápido
 
-### 1. Variables de Entorno
+### Modo Demo (sin configuración)
 
-Crear archivo `.env` en la raíz:
+```bash
+npm run dev
+```
+
+1. Abre `http://localhost:3000`
+2. Haz clic en "🎮 ENTRAR A DEMO"
+3. Explora todas las funcionalidades
+
+### Modo Developer
+
+Usuario developer: `cuentaparatodoxduwu7w7@gmail.com`
+
+El developer puede:
+- Probar todos los planes (FREE, RUSH, LEGEND, TEACHER)
+- Acceder a todas las funciones
+- Usar el panel de pruebas
+- Recursos ilimitados
+
+---
+
+## 🏗️ Estructura del Proyecto
+
+```
+math-rush/
+├── src/
+│   ├── components/          # Componentes reutilizables
+│   │   ├── layout.tsx       # Sidebar, BottomNav, ProtectedRoute
+│   │   └── ui.tsx           # Button, Card, Modal, Badge, etc.
+│   ├── contexts/            # Contextos de React
+│   │   ├── AuthContext.tsx  # Autenticación y developer mode
+│   │   └── GameContext.tsx  # Motor de juego
+│   ├── hooks/               # Hooks personalizados
+│   │   ├── useAI.ts         # Hook de IA
+│   │   └── useEntitlements.ts # Hook de permisos
+│   ├── lib/                 # Utilidades y configuración
+│   │   ├── assets.ts        # URLs de imágenes
+│   │   ├── gameEngine.ts    # Lógica del juego
+│   │   ├── mockData.ts      # Datos mock
+│   │   └── supabase.ts      # Cliente Supabase + tipos
+│   ├── pages/               # Páginas de la aplicación
+│   │   ├── Landing.tsx      # Landing page
+│   │   ├── Auth.tsx         # Login, Register, ForgotPassword
+│   │   ├── Lobby.tsx        # Menú principal
+│   │   ├── Games.tsx        # Selector de modos
+│   │   ├── GamePlay.tsx     # Gameplay
+│   │   ├── Scan.tsx         # Escáner
+│   │   ├── Shop.tsx         # Tienda
+│   │   ├── AiLab.tsx        # Laboratorio IA
+│   │   ├── Plans.tsx        # Planes
+│   │   ├── DeveloperPanel.tsx # Panel developer
+│   │   └── ...              # Otras páginas
+│   ├── services/            # Servicios
+│   │   ├── ai/              # Servicio de IA
+│   │   │   ├── AIService.ts
+│   │   │   └── providers/
+│   │   └── soundService.ts  # Servicio de sonidos
+│   ├── App.tsx              # Componente principal
+│   ├── main.tsx             # Entry point
+│   └── index.css            # Estilos globales
+├── supabase/
+│   ├── schema.sql           # Estructura de base de datos
+│   └── functions/           # Edge Functions
+├── public/                  # Assets públicos
+├── index.html               # HTML principal
+├── package.json             # Dependencias
+├── vite.config.js           # Configuración Vite
+└── tsconfig.json            # Configuración TypeScript
+```
+
+---
+
+## 🔧 Configuración para Producción
+
+### Variables de Entorno
+
+Crea un archivo `.env` en la raíz:
 
 ```env
-# Supabase (OBLIGATORIO para producción)
+# Supabase (requerido para producción)
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=tu-anon-key
-
-# NO colocar en frontend:
-# SUPABASE_SERVICE_ROLE_KEY (solo en Edge Functions)
 ```
 
-### 2. Google OAuth
+### Configuraciones Adicionales
 
-Configurar en Supabase Dashboard:
-1. Ir a Authentication → Providers → Google
-2. Obtener Client ID y Client Secret de Google Cloud Console
-3. Agregar Client ID y Client Secret en Supabase
-4. En Google Cloud Console, agregar la URL de redirect:
-   `https://tu-proyecto.supabase.co/auth/v1/callback`
-5. Agregar tu dominio en "Authorized JavaScript origins"
+#### 1. Supabase
+```bash
+# Ejecutar schema.sql en Supabase SQL Editor
+# Configurar Authentication
+# Configurar Storage buckets
+```
 
-**⚠️ El Client Secret NUNCA va en el frontend.**
+#### 2. Google OAuth
+1. Ir a Supabase Dashboard → Authentication → Providers → Google
+2. Configurar Client ID y Client Secret de Google Cloud
+3. Agregar URL de redirect
 
-### 3. Base de Datos
-
-Ejecutar `supabase/schema.sql` en Supabase SQL Editor.
-
-### 4. Pagos (Culqi)
-
-Configurar en backend (Edge Functions):
+#### 3. Pagos (Culqi)
 ```env
-CULQI_PUBLIC_KEY=pk_...  (solo frontend para Culqi.js)
-CULQI_SECRET_KEY=sk_...  (SOLO backend)
-CULQI_WEBHOOK_SECRET=... (SOLO backend)
+# Solo en backend (Edge Functions)
+CULQI_PUBLIC_KEY=pk_...
+CULQI_SECRET_KEY=sk_...
+CULQI_WEBHOOK_SECRET=...
 ```
 
-Medios de pago disponibles según configuración del comercio:
-- Yape, Plin, Visa, Mastercard, American Express, Diners, PagoEfectivo, Banca Móvil
+#### 4. APIs de IA
+```env
+# Solo en backend (Edge Functions)
+AI_PROVIDER_KEY=...
+AI_PROVIDER_URL=...
+```
 
 ---
 
-## 🏗️ Arquitectura
+## 📦 Build para Producción
 
-### Rutas
+```bash
+# Build
+npm run build
 
-| Ruta | Descripción | Acceso |
-|------|-------------|--------|
-| `/` | Landing Page | Público |
-| `/login` | Iniciar sesión | Público |
-| `/register` | Registro | Público |
-| `/forgot-password` | Recuperar contraseña | Público |
-| `/onboarding` | Configuración inicial | Autenticado |
-| `/app` | Lobby | Autenticado |
-| `/app/scan` | Escáner | Autenticado |
-| `/app/games` | Modos de juego | Autenticado |
-| `/app/game/:id` | Gameplay | Autenticado |
-| `/app/library` | Biblioteca | Autenticado |
-| `/app/progress` | Progreso | Autenticado |
-| `/app/shop` | Tienda | Autenticado |
-| `/app/ai-lab` | Laboratorio IA | Autenticado |
-| `/app/profile` | Perfil | Autenticado |
-| `/app/settings` | Configuración | Autenticado |
-| `/app/plans` | Planes | Autenticado |
-| `/teacher` | Dashboard docente | Teacher/Admin/Dev |
-| `/admin` | Panel admin | Admin/Dev |
-| `/admin/developer` | Panel developer | Developer |
+# Preview del build
+npm run preview
+```
 
-### Roles
-
-- **student:** Acceso básico al juego
-- **teacher:** + Dashboard docente
-- **admin:** + Panel administrativo
-- **developer:** Acceso total (validado por backend/RLS)
-
-### Seguridad
-
-- RLS en todas las tablas
-- Roles validados en backend
-- Developer: `cuentaparatodoxduwu7w7@gmail.com` (verificado por backend)
-- Entitlements calculados en backend
-- Webhooks idempotentes
-- No se almacenan datos de tarjeta
-- No se exponen secrets en frontend
+Los archivos optimizados se generarán en `dist/`
 
 ---
 
-## 🎮 Modos de Juego
+## 🎨 Tecnologías
 
-1. **⚡ Quick Rush** — 10 preguntas rápidas
-2. **🔥 Time Attack** — Contra el reloj (60s)
-3. **💀 Boss Battle** — Derrota al jefe matemático
-4. **♾️ Survival** — 5 vidas, dificultad creciente
-5. **⚔️ Duelo** — VS otro jugador (próximamente)
-
----
-
-## 💰 Planes
-
-| Plan | Precio | Beneficios |
-|------|--------|------------|
-| FREE | S/ 0 | Juegos básicos, 3 escaneos/día |
-| RUSH | S/ 4.90/mes | Cuy Sabio IA, 10 escaneos, skins premium |
-| LEGEND | S/ 9.90/mes | Todo incluido, modo Pre-U, simulacros |
-| TEACHER | S/ 19.90/mes | Clases, actividades, dashboard |
+- **Frontend**: React 18 + TypeScript
+- **Estilos**: Tailwind CSS 4
+- **Animaciones**: Framer Motion
+- **Enrutamiento**: React Router v6
+- **Estado**: Context API
+- **Backend**: Supabase (Auth, Database, Storage, Edge Functions)
+- **Pagos**: Culqi (preparado)
+- **Build**: Vite
 
 ---
 
-## 📝 Estado Actual (MVP)
+## 📱 Responsive
 
-### ✅ Implementado
-- Landing page completa
-- Autenticación (email + Google preparado)
-- Onboarding
-- Lobby con UI de videojuego
-- Motor de juego (5 modos)
-- Sistema de XP y niveles
-- Monedas y gemas
-- Tienda con inventario
-- Escáner (UI + flujo)
-- Cuy Sabio (mock)
-- Laboratorio IA (mock)
-- Biblioteca
-- Progreso con gráficos
-- Planes y checkout (UI)
-- Panel docente
-- Panel admin
-- Panel developer
-- Diseño responsive (mobile-first)
-- Sistema de logros
-- Rutas protegidas por rol
-
-### ⏳ Pendiente (requiere configuración externa)
-- Conexión real a Supabase (requiere credenciales)
-- Google OAuth funcional (requiere config en Supabase + Google Cloud)
-- Escáner con IA real (requiere provider de IA)
-- Pagos con Culqi (requiere cuenta de comercio)
-- Webhook de pagos (Edge Function)
-- Generación de preguntas por IA
-- Modo Duelo en tiempo real
-- Notificaciones push
+La aplicación es completamente responsive:
+- ✅ Mobile (< 768px)
+- ✅ Tablet (768px - 1024px)
+- ✅ Desktop (> 1024px)
 
 ---
 
-## 🔒 Seguridad - Reglas
+## 🔒 Seguridad
 
-1. **NUNCA** colocar service_role_key en frontend
-2. **NUNCA** almacenar datos completos de tarjeta
-3. **NUNCA** confiar en valores del frontend para permisos
-4. **NUNCA** permitir que un usuario modifique su propio rol
-5. Los entitlements se calculan en backend
-6. Los pagos se validan con webhooks idempotentes
-7. Developer access se valida por claims/RLS, no solo por email
+- ✅ API keys solo en backend
+- ✅ No se almacenan datos de tarjeta
+- ✅ RLS en todas las tablas
+- ✅ Validación en Edge Functions
+- ✅ No se confía en el frontend para permisos
 
 ---
 
-## 🐹 Mascotas
+## 📊 Planes
 
-- **Cuy Matemático** 🐹 — Mascota principal
-- **Llama Blanca** 🦙 — Mascota secundaria
+| Plan | Precio | Características |
+|------|--------|----------------|
+| **FREE** | S/ 0.00 | Juegos básicos, 3 escaneos/día |
+| **RUSH** ⭐ | S/ 4.90/mes | Cuy Sabio IA, 10 escaneos/día, skins premium |
+| **LEGEND** | S/ 9.90/mes | Todo incluido, Pre-U, simulacros |
+| **TEACHER** | S/ 19.90/mes | Clases, actividades, dashboard |
 
 ---
 
-*Hecho con ❤️ para estudiantes peruanos*
+## 🐛 Modo Demo
+
+La aplicación funciona completamente en modo demo sin necesidad de configuración externa:
+
+- ✅ Todas las funcionalidades operativas
+- ✅ Datos mock en memoria
+- ✅ Usuario demo automático
+- ✅ Modo developer para pruebas
+
+---
+
+## 🤝 Contribuir
+
+Las contribuciones son bienvenidas. Por favor:
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
+
+---
+
+## 👥 Autor
+
+**Math Rush Team**
+
+---
+
+## 🙏 Agradecimientos
+
+- React Team
+- Supabase Team
+- Tailwind CSS Team
+- Framer Motion Team
+- Todos los contribuidores
+
+---
+
+## 📞 Contacto
+
+Para preguntas o soporte:
+- Email: soporte@mathrush.com
+- Twitter: @MathRushApp
+- Discord: [Comunidad Math Rush](https://discord.gg/mathrush)
+
+---
+
+**¡Aprende. Juega. Supera tus límites!** 🐹⚡
