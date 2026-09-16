@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button, Timer, Lives, ComboCounter, BossHealthBar, PlayerHealthBar, Card, Badge, Modal } from '../components/ui';
 import { getBossForDifficulty } from '../lib/gameEngine';
 import { mockAIRequest } from '../lib/gameEngine';
+import { soundService } from '../services/soundService';
 
 export default function GamePlayPage() {
   const { id: mode } = useParams<{ id: string }>();
@@ -18,7 +19,33 @@ export default function GamePlayPage() {
   const [showCuySabio, setShowCuySabio] = useState(false);
   const [cuyMessage, setCuyMessage] = useState('');
   const [cuyLoading, setCuyLoading] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(3);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Countdown at start
+  useEffect(() => {
+    if (!currentSession || countdown === null) return;
+
+    if (countdown > 0) {
+      soundService.countdown();
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev === null || prev <= 1) {
+            soundService.rush();
+            setTimeout(() => setCountdown(null), 500);
+            return 0;
+          }
+          soundService.countdown();
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [currentSession, countdown]);
 
   // Timer
   useEffect(() => {
@@ -47,10 +74,21 @@ export default function GamePlayPage() {
     const result = submitAnswer(answerIndex);
     setLastAnswer(result);
 
+    // Play sound based on answer
+    if (result.correct) {
+      soundService.correct();
+      if (result.combo > 1) {
+        setTimeout(() => soundService.combo(result.combo), 300);
+      }
+    } else {
+      soundService.wrong();
+    }
+
     setTimeout(() => {
       setIsAnswering(false);
       setLastAnswer(null);
       if (currentSession.game_mode === 'boss_battle' && bossHp <= 0) {
+        soundService.victory();
         setShowResult(true);
         endGame();
       } else if (currentSession.game_mode === 'survival' && currentSession.lives <= 0) {
@@ -65,6 +103,16 @@ export default function GamePlayPage() {
       }
     }, 1500);
   }, [isAnswering, currentSession, submitAnswer, nextQuestion, endGame, bossHp, mode, setTimeRemaining]);
+
+  // Calculate rank based on performance
+  const calculateRank = (accuracy: number, maxCombo: number): { rank: string; color: string; emoji: string } => {
+    if (accuracy >= 95 && maxCombo >= 8) return { rank: 'SS', color: 'from-yellow-400 to-orange-500', emoji: '👑' };
+    if (accuracy >= 90 && maxCombo >= 6) return { rank: 'S', color: 'from-purple-500 to-pink-500', emoji: '⭐' };
+    if (accuracy >= 80) return { rank: 'A', color: 'from-blue-500 to-cyan-500', emoji: '🎯' };
+    if (accuracy >= 70) return { rank: 'B', color: 'from-green-500 to-emerald-500', emoji: '✓' };
+    if (accuracy >= 60) return { rank: 'C', color: 'from-orange-500 to-amber-500', emoji: '👌' };
+    return { rank: 'D', color: 'from-gray-500 to-gray-600', emoji: '💪' };
+  };
 
   async function handleCuySabio(type: 'hint' | 'explanation' | 'step_by_step') {
     if (!currentSession) return;
@@ -92,56 +140,192 @@ export default function GamePlayPage() {
   const question = currentSession.questions[currentSession.current_question];
   const boss = currentSession.game_mode === 'boss_battle' ? getBossForDifficulty(currentSession.difficulty) : null;
 
+  // Countdown Screen
+  if (countdown !== null) {
+    return (
+      <div className="min-h-screen game-gradient flex items-center justify-center">
+        <motion.div
+          key={countdown}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 2, opacity: 0 }}
+          className="text-center"
+        >
+          {countdown > 0 ? (
+            <>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.5 }}
+                className="text-9xl font-black bg-gradient-to-br from-rush-orange to-rush-yellow bg-clip-text text-transparent"
+              >
+                {countdown}
+              </motion.div>
+              <p className="text-2xl text-gray-400 mt-4">Prepárate...</p>
+            </>
+          ) : (
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: 'spring', duration: 0.8 }}
+            >
+              <div className="text-8xl font-black bg-gradient-to-br from-rush-orange via-rush-yellow to-rush-orange bg-clip-text text-transparent animate-pulse">
+                ¡RUSH!
+              </div>
+              <motion.div
+                animate={{ scale: [1, 1.5, 1] }}
+                transition={{ duration: 0.5, repeat: 2 }}
+                className="text-6xl mt-4"
+              >
+                ⚡
+              </motion.div>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+    );
+  }
+
   // Game Result Screen
   if (showResult || currentSession.status === 'completed') {
+    const totalQuestions = currentSession.questions.length;
+    const correctAnswers = Math.round((currentSession.score / 1000) * totalQuestions / 2); // Approximation
+    const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    const rankInfo = calculateRank(accuracy, currentSession.max_combo);
+
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 game-gradient">
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md">
-          <Card className="p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center p-4 game-gradient relative overflow-hidden">
+        {/* Background particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-rush-orange/30 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -100, 0],
+                opacity: [0, 1, 0],
+                scale: [0, 1, 0],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+        </div>
+
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }} 
+          animate={{ scale: 1, opacity: 1 }} 
+          className="w-full max-w-2xl relative z-10"
+        >
+          <Card className="p-8 text-center card-elevated">
+            {/* Title */}
             {currentSession.game_mode === 'boss_battle' && bossHp <= 0 ? (
-              <>
-                <span className="text-6xl mb-4 block">🏆</span>
-                <h2 className="font-display text-3xl font-black text-rush-yellow mb-2">¡BOSS DERROTADO!</h2>
-              </>
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }}>
+                <span className="text-7xl mb-4 block">🏆</span>
+                <h2 className="font-display text-4xl font-black bg-gradient-to-r from-rush-yellow to-rush-orange bg-clip-text text-transparent mb-2">
+                  ¡BOSS DERROTADO!
+                </h2>
+              </motion.div>
             ) : currentSession.game_mode === 'survival' && currentSession.lives <= 0 ? (
-              <>
-                <span className="text-6xl mb-4 block">💀</span>
-                <h2 className="font-display text-2xl font-black text-red-400 mb-2">RUN TERMINADA</h2>
-              </>
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }}>
+                <span className="text-7xl mb-4 block">💀</span>
+                <h2 className="font-display text-3xl font-black text-red-400 mb-2">RUN TERMINADA</h2>
+              </motion.div>
             ) : (
-              <>
-                <span className="text-6xl mb-4 block">🎉</span>
-                <h2 className="font-display text-3xl font-black text-rush-green mb-2">¡PARTIDA COMPLETADA!</h2>
-              </>
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }}>
+                <span className="text-7xl mb-4 block">🎉</span>
+                <h2 className="font-display text-4xl font-black bg-gradient-to-r from-rush-green to-emerald-500 bg-clip-text text-transparent mb-2">
+                  ¡PARTIDA COMPLETADA!
+                </h2>
+              </motion.div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 my-6">
-              <div className="bg-rush-darker rounded-xl p-3">
-                <p className="text-2xl font-bold text-rush-orange">{currentSession.score.toLocaleString()}</p>
-                <p className="text-xs text-gray-400">Puntuación</p>
+            {/* Rank Display */}
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.4, type: 'spring', duration: 0.8 }}
+              className="my-8"
+            >
+              <div className={`inline-block px-12 py-6 rounded-3xl bg-gradient-to-br ${rankInfo.color} shadow-2xl`}>
+                <div className="text-6xl mb-2">{rankInfo.emoji}</div>
+                <div className="text-7xl font-black text-white">{rankInfo.rank}</div>
               </div>
-              <div className="bg-rush-darker rounded-xl p-3">
-                <p className="text-2xl font-bold text-rush-purple">+{currentSession.xp_earned}</p>
-                <p className="text-xs text-gray-400">XP Ganado</p>
-              </div>
-              <div className="bg-rush-darker rounded-xl p-3">
-                <p className="text-2xl font-bold text-rush-yellow">+{currentSession.coins_earned}</p>
-                <p className="text-xs text-gray-400">🪙 Monedas</p>
-              </div>
-              <div className="bg-rush-darker rounded-xl p-3">
-                <p className="text-2xl font-bold text-rush-orange">x{currentSession.max_combo}</p>
-                <p className="text-xs text-gray-400">Mejor combo</p>
-              </div>
+            </motion.div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-rush-darker rounded-xl p-4"
+              >
+                <p className="text-3xl font-bold text-rush-orange">{currentSession.score.toLocaleString()}</p>
+                <p className="text-xs text-gray-400 mt-1">Puntuación</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="bg-rush-darker rounded-xl p-4"
+              >
+                <p className="text-3xl font-bold text-rush-green">{accuracy}%</p>
+                <p className="text-xs text-gray-400 mt-1">Precisión</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="bg-rush-darker rounded-xl p-4"
+              >
+                <p className="text-3xl font-bold text-rush-purple">+{currentSession.xp_earned}</p>
+                <p className="text-xs text-gray-400 mt-1">XP Ganado</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                className="bg-rush-darker rounded-xl p-4"
+              >
+                <p className="text-3xl font-bold text-rush-yellow">+{currentSession.coins_earned}</p>
+                <p className="text-xs text-gray-400 mt-1">🪙 Monedas</p>
+              </motion.div>
             </div>
 
-            <div className="space-y-3">
+            {/* Combo Display */}
+            {currentSession.max_combo > 1 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1 }}
+                className="bg-gradient-to-r from-rush-orange/20 to-rush-yellow/20 border border-rush-orange/30 rounded-xl p-4 mb-6"
+              >
+                <p className="text-sm text-gray-400 mb-1">Mejor Combo</p>
+                <p className="text-4xl font-black text-rush-orange">x{currentSession.max_combo}</p>
+              </motion.div>
+            )}
+
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1 }}
+              className="space-y-3"
+            >
               <Button variant="primary" size="lg" className="w-full" onClick={() => navigate('/app')}>
                 ⚡ JUGAR OTRA VEZ
               </Button>
               <Button variant="outline" size="md" className="w-full" onClick={() => navigate('/app')}>
                 VER EXPLICACIONES
               </Button>
-            </div>
+            </motion.div>
           </Card>
         </motion.div>
       </div>
@@ -219,15 +403,54 @@ export default function GamePlayPage() {
             {/* Feedback */}
             {lastAnswer && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`mt-4 p-4 rounded-xl text-center ${lastAnswer.correct ? 'bg-rush-green/10 border border-rush-green/30' : 'bg-red-500/10 border border-red-500/30'}`}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`mt-4 p-6 rounded-2xl text-center ${
+                  lastAnswer.correct 
+                    ? 'bg-gradient-to-br from-rush-green/20 to-emerald-500/20 border-2 border-rush-green/50' 
+                    : 'bg-gradient-to-br from-red-500/20 to-rose-500/20 border-2 border-red-500/50'
+                }`}
               >
-                <p className={`font-bold ${lastAnswer.correct ? 'text-rush-green' : 'text-red-400'}`}>
-                  {lastAnswer.correct ? '✓ ¡Correcto!' : '✗ Incorrecto'}
-                </p>
-                {lastAnswer.correct && (
-                  <p className="text-sm text-gray-400 mt-1">+{lastAnswer.score} pts · +{lastAnswer.xp} XP · +{lastAnswer.coins} 🪙</p>
+                {lastAnswer.correct ? (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: 'spring', duration: 0.5 }}
+                      className="text-5xl mb-2"
+                    >
+                      ✓
+                    </motion.div>
+                    <p className="text-2xl font-black text-rush-green mb-2">¡CORRECTO!</p>
+                    <div className="flex items-center justify-center gap-4 text-sm">
+                      <span className="text-rush-orange font-bold">+{lastAnswer.score} pts</span>
+                      <span className="text-rush-purple font-bold">+{lastAnswer.xp} XP</span>
+                      <span className="text-rush-yellow font-bold">+{lastAnswer.coins} 🪙</span>
+                    </div>
+                    {lastAnswer.combo > 1 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="mt-3 inline-block px-4 py-2 bg-gradient-to-r from-rush-orange to-rush-yellow rounded-full"
+                      >
+                        <span className="text-white font-black">🔥 COMBO x{lastAnswer.combo}</span>
+                      </motion.div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: [0, 1.2, 1] }}
+                      transition={{ duration: 0.3 }}
+                      className="text-5xl mb-2"
+                    >
+                      ✗
+                    </motion.div>
+                    <p className="text-2xl font-black text-red-400 mb-2">INCORRECTO</p>
+                    <p className="text-sm text-gray-400">¡Sigue intentando!</p>
+                  </>
                 )}
               </motion.div>
             )}

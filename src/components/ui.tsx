@@ -135,14 +135,64 @@ export function Lives({ count, max = 5 }: { count: number; max?: number }) {
 // Combo Counter
 export function ComboCounter({ combo }: { combo: number }) {
   if (combo < 2) return null;
+  
+  // Different styles based on combo level
+  const getComboStyle = () => {
+    if (combo >= 8) return { color: 'from-purple-500 via-pink-500 to-red-500', size: 'text-2xl', glow: 'shadow-purple-500/50' };
+    if (combo >= 6) return { color: 'from-red-500 via-orange-500 to-yellow-500', size: 'text-xl', glow: 'shadow-red-500/50' };
+    if (combo >= 4) return { color: 'from-orange-500 to-yellow-500', size: 'text-lg', glow: 'shadow-orange-500/50' };
+    return { color: 'from-rush-orange to-rush-yellow', size: 'text-base', glow: 'shadow-rush-orange/50' };
+  };
+  
+  const style = getComboStyle();
+  
   return (
     <motion.div
       key={combo}
-      initial={{ scale: 0.5, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-rush-orange to-rush-yellow rounded-full"
+      initial={{ scale: 0, rotate: -180 }}
+      animate={{ 
+        scale: [0, 1.3, 1],
+        rotate: 0,
+      }}
+      transition={{ type: 'spring', duration: 0.5 }}
+      className={`relative flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${style.color} rounded-full shadow-lg ${style.glow}`}
     >
-      <span className="text-sm font-black text-white">🔥 x{combo}</span>
+      {/* Fire animation */}
+      <motion.span
+        animate={{ 
+          scale: [1, 1.2, 1],
+          rotate: [0, 10, -10, 0]
+        }}
+        transition={{ duration: 0.5, repeat: Infinity }}
+        className="text-2xl"
+      >
+        🔥
+      </motion.span>
+      
+      {/* Combo number */}
+      <span className={`${style.size} font-black text-white drop-shadow-lg`}>
+        x{combo}
+      </span>
+      
+      {/* Sparkles for high combos */}
+      {combo >= 6 && (
+        <>
+          <motion.span
+            animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
+            transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+            className="absolute -top-1 -left-1 text-xs"
+          >
+            ✨
+          </motion.span>
+          <motion.span
+            animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
+            transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
+            className="absolute -bottom-1 -right-1 text-xs"
+          >
+            ✨
+          </motion.span>
+        </>
+      )}
     </motion.div>
   );
 }
