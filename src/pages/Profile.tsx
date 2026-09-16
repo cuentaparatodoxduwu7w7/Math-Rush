@@ -128,6 +128,16 @@ export default function ProfilePage() {
               </Card>
             </Link>
           )}
+          {user.role === 'developer' && (
+            <Link to="/developer">
+              <Card className="p-4 flex items-center gap-3 hover:border-rush-orange/50 transition-all cursor-pointer bg-rush-orange/5">
+                <span className="text-xl">🛠️</span>
+                <span className="font-medium text-sm text-rush-orange">Panel Developer</span>
+                <Badge color="orange">DEV</Badge>
+                <span className="ml-auto text-rush-orange">→</span>
+              </Card>
+            </Link>
+          )}
           <Button variant="danger" className="w-full" onClick={handleLogout}>
             Cerrar Sesión
           </Button>

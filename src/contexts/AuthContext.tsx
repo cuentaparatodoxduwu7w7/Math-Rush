@@ -31,6 +31,8 @@ interface AuthContextType {
   activateDeveloperMode: () => void;
   deactivateDeveloperMode: () => void;
   isDeveloper: boolean;
+  setDeveloperPlan: (plan: 'free' | 'rush' | 'legend' | 'teacher') => void;
+  developerPlan: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -75,6 +77,7 @@ const DEVELOPER_MOCK_USER: Profile = {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [developerPlan, setDeveloperPlanState] = useState<string>('free');
 
   const isSupabaseConfigured = import.meta.env.VITE_SUPABASE_URL && 
     import.meta.env.VITE_SUPABASE_URL !== 'https://placeholder.supabase.co';
@@ -237,25 +240,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, isSupabaseConfigured]);
 
+  const isDeveloper = user?.email === DEVELOPER_EMAIL || user?.role === 'developer';
+
   const entitlements = getUserEntitlements(
     user?.role || 'student',
-    user?.role === 'developer' ? 'developer' : 'free'
+    isDeveloper ? developerPlan : 'free'
   );
-
-  const isDeveloper = user?.email === DEVELOPER_EMAIL || user?.role === 'developer';
 
   const activateDeveloperMode = useCallback(() => {
     // Only allow if user email matches developer email
     if (user?.email === DEVELOPER_EMAIL) {
       setUser(DEVELOPER_MOCK_USER);
+      setDeveloperPlanState('developer');
     }
   }, [user]);
 
   const deactivateDeveloperMode = useCallback(() => {
     if (user?.email === DEVELOPER_EMAIL) {
       setUser({ ...MOCK_USER, email: DEVELOPER_EMAIL, role: 'student' });
+      setDeveloperPlanState('free');
     }
   }, [user]);
+
+  const setDeveloperPlan = useCallback((plan: 'free' | 'rush' | 'legend' | 'teacher') => {
+    if (!isDeveloper) return;
+    
+    setDeveloperPlanState(plan);
+    
+    // Update user role based on plan
+    const roleMap: Record<string, UserRole> = {
+      'free': 'student',
+      'rush': 'student',
+      'legend': 'student',
+      'teacher': 'teacher',
+    };
+    
+    if (user?.email === DEVELOPER_EMAIL) {
+      setUser({
+        ...DEVELOPER_MOCK_USER,
+        role: plan === 'teacher' ? 'teacher' : 'developer',
+      });
+    }
+  }, [isDeveloper, user]);
 
   return (
     <AuthContext.Provider value={{
@@ -272,6 +298,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       activateDeveloperMode,
       deactivateDeveloperMode,
       isDeveloper,
+      setDeveloperPlan,
+      developerPlan,
     }}>
       {children}
     </AuthContext.Provider>

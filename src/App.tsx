@@ -20,6 +20,7 @@ const PlansPage = lazy(() => import('./pages/Plans'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
 const TeacherPage = lazy(() => import('./pages/Teacher'));
 const AdminPage = lazy(() => import('./pages/Admin'));
+const DeveloperPanel = lazy(() => import('./pages/DeveloperPanel'));
 
 // Auth pages (not lazy loaded for fast initial access)
 import { LoginPage, RegisterPage, ForgotPasswordPage } from './pages/Auth';
@@ -131,6 +132,11 @@ export default function App() {
               } />
               <Route path="/admin/developer" element={
                 <ProtectedRoute requireRole={['developer']}><AdminPage /></ProtectedRoute>
+              } />
+
+              {/* Developer Panel Route */}
+              <Route path="/developer" element={
+                <ProtectedRoute requireRole={['developer']}><DeveloperPanel /></ProtectedRoute>
               } />
 
               {/* Catch all */}
