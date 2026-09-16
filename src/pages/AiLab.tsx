@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '../components/layout';
 import { Card, Button, Badge, Modal } from '../components/ui';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
+import { ASSETS } from '../lib/assets';
 
 export default function AiLabPage() {
   const { user } = useAuth();
@@ -24,115 +25,183 @@ export default function AiLabPage() {
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Mascota form state
+  const [mascotType, setMascotType] = useState('cuy');
+  const [mascotStyle, setMascotStyle] = useState('gamer');
+  const [mascotColor, setMascotColor] = useState('blanco');
+  const [mascotAccessory, setMascotAccessory] = useState('audifonos');
+  
+  // Audio player state
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(0.7);
 
   const tools = [
     { 
       id: 'world', 
       name: 'Diseñador de Mundo', 
       icon: '🎨', 
-      desc: 'Crea mundos temáticos para jugar',
+      desc: 'Crea un mundo único para tu experiencia Math Rush',
       fullDesc: 'Diseña escenarios únicos con ambientes personalizados. Cada mundo tiene su propia estética y atmósfera.',
-      placeholder: 'Ej: Un castillo matemático flotando en el espacio, con planetas de cristal y símbolos de álgebra brillando...',
+      placeholder: 'Describe tu mundo...',
     },
     { 
       id: 'audio', 
       name: 'Sintetizador de Audio', 
       icon: '🎵', 
-      desc: 'Genera efectos de sonido',
+      desc: 'Genera música y efectos de sonido',
       fullDesc: 'Crea música y efectos de sonido personalizados para tus partidas. Desde lo-fi hasta épico.',
-      placeholder: 'Ej: Una música lo-fi futurista con sonidos de monedas y sintetizadores suaves...',
+      placeholder: 'Describe tu música...',
     },
     { 
       id: 'pet', 
       name: 'Diseñador de Mascota', 
       icon: '🐹', 
-      desc: 'Personaliza tu mascota',
-      fullDesc: 'Diseña tu compañero perfecto. Elige estilo, colores, accesorios y personalidad.',
-      placeholder: 'Ej: Cuy blanco y marrón con audífonos gamer, lentes futuristas y mochila espacial...',
+      desc: 'Personaliza tu compañero de juego',
+      fullDesc: 'Diseña tu compañero perfecto. Elige tipo, estilo, colores y accesorios.',
+      placeholder: '',
     },
   ];
 
-  const presets: Record<string, string[]> = {
-    world: [
-      'Mundo espacial con planetas matemáticos',
-      'Bosque encantado de geometría',
-      'Ciudad futurista de álgebra',
-      'Océano de fracciones',
-      'Desierto de ecuaciones',
-      'Montaña de números primos'
-    ],
-    audio: [
-      'Efecto de victoria épica',
-      'Sonido de combo x5',
-      'Música de fondo relajante',
-      'Efecto de tiempo agotándose',
-      'Melodía de menú principal',
-      'Sonido de moneda recogida'
-    ],
-    pet: [
-      'Cuy con armadura dorada',
-      'Cuy astronauta',
-      'Llama con gafas de sol',
-      'Cuy samurái',
-      'Cuy chef matemático',
-      'Llama detective'
-    ],
+  const worldPresets = [
+    { label: '🌌 Espacio matemático', value: 'Mundo espacial con planetas matemáticos' },
+    { label: '🏰 Castillo de geometría', value: 'Castillo flotante de geometría con torres de polígonos' },
+    { label: '🌋 Volcán de números', value: 'Volcán activo con ríos de números y lava de ecuaciones' },
+    { label: '🌃 Ciudad cyberpunk', value: 'Ciudad cyberpunk futurista con luces de neón y fórmulas' },
+    { label: '🌳 Bosque matemático', value: 'Bosque encantado con árboles de fractales y flores geométricas' },
+  ];
+
+  const audioPresets = [
+    { label: '🎹 Lo-Fi', value: 'Música lo-fi relajante con beats suaves' },
+    { label: '👾 8-Bit', value: 'Música 8-bit retro estilo videojuego clásico' },
+    { label: '🌃 Cyberpunk', value: 'Música cyberpunk con sintetizadores futuristas' },
+    { label: '🌌 Espacial', value: 'Música espacial ambient con pads etéreos' },
+    { label: '⚔️ Aventura', value: 'Música épica de aventura con orquesta' },
+  ];
+
+  // Simulate progress animation
+  const simulateProgress = async (messages: string[]) => {
+    setIsGenerating(true);
+    setProgress(0);
+    
+    for (let i = 0; i < messages.length; i++) {
+      setProgressMessage(messages[i]);
+      const targetProgress = ((i + 1) / messages.length) * 100;
+      
+      // Animate progress
+      while (progress < targetProgress) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        setProgress(prev => Math.min(prev + 2, targetProgress));
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+    
+    setProgress(100);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setIsGenerating(false);
   };
 
   async function handleGenerate() {
-    if (!prompt || !selectedTool) return;
+    if (!selectedTool) return;
+    if (selectedTool !== 'pet' && !prompt) return;
     
     clearError();
     setGeneratedContent(null);
 
-    let result;
     if (selectedTool === 'world') {
-      result = await generateImage(prompt, { quality: 'high' });
-      if (result) {
-        const content = {
-          type: 'world',
-          name: prompt,
-          image: result.url,
-          description: `Mundo generado: "${prompt}"`,
-          features: ['Fondo dinámico', 'Partículas animadas', 'Dificultad adaptativa', '+50 XP al completar'],
-          timestamp: Date.now(),
-          provider: result.provider,
-        };
-        setGeneratedContent(content);
-        setHistory([content, ...history].slice(0, 10));
+      // Simulate world generation with progress
+      await simulateProgress([
+        'Analizando idea...',
+        'Construyendo escenario...',
+        'Generando ambiente...',
+        'Aplicando detalles matemáticos...'
+      ]);
+
+      // Select appropriate background based on prompt
+      let imageUrl = ASSETS.backgrounds.space;
+      const lowerPrompt = prompt.toLowerCase();
+      
+      if (lowerPrompt.includes('espacio') || lowerPrompt.includes('space') || lowerPrompt.includes('galaxia') || lowerPrompt.includes('planeta')) {
+        imageUrl = ASSETS.backgrounds.space;
+      } else if (lowerPrompt.includes('neon') || lowerPrompt.includes('cyber') || lowerPrompt.includes('futur') || lowerPrompt.includes('ciudad')) {
+        imageUrl = ASSETS.backgrounds.neon;
+      } else if (lowerPrompt.includes('matem') || lowerPrompt.includes('geomet') || lowerPrompt.includes('número') || lowerPrompt.includes('castillo')) {
+        imageUrl = ASSETS.backgrounds.math;
+      } else if (lowerPrompt.includes('natur') || lowerPrompt.includes('bosque') || lowerPrompt.includes('verde') || lowerPrompt.includes('árbol')) {
+        imageUrl = ASSETS.backgrounds.nature;
       }
+
+      const content = {
+        type: 'world',
+        name: prompt,
+        image: imageUrl,
+        description: `Mundo generado: "${prompt}"`,
+        features: ['Fondo dinámico', 'Partículas animadas', 'Dificultad adaptativa', '+50 XP al completar'],
+        timestamp: Date.now(),
+        provider: 'mock-image',
+      };
+      setGeneratedContent(content);
+      setHistory([content, ...history].slice(0, 10));
+      
     } else if (selectedTool === 'audio') {
-      result = await generateAudio(prompt);
-      if (result) {
-        const content = {
-          type: 'audio',
-          name: prompt,
-          audioUrl: result.url,
-          duration: `${result.duration.toFixed(1)}s`,
-          format: result.format,
-          description: `Audio generado: "${prompt}"`,
-          features: ['Reproductor integrado', 'Loop disponible', 'Descarga permitida', 'Aplicable a juegos'],
-          timestamp: Date.now(),
-          provider: result.provider,
-        };
-        setGeneratedContent(content);
-        setHistory([content, ...history].slice(0, 10));
-      }
+      // Simulate audio generation with progress
+      await simulateProgress([
+        'Analizando estilo musical...',
+        'Componiendo melodía...',
+        'Generando instrumentos...',
+        'Mezclando audio...'
+      ]);
+
+      const content = {
+        type: 'audio',
+        name: prompt,
+        audioUrl: '/assets/demo/math-rush-demo.mp4', // Using demo file as audio source
+        duration: '15.0s',
+        format: 'mp4',
+        description: `Audio generado: "${prompt}"`,
+        features: ['Reproductor integrado', 'Loop disponible', 'Aplicable a juegos'],
+        timestamp: Date.now(),
+        provider: 'mock-audio',
+      };
+      setGeneratedContent(content);
+      setHistory([content, ...history].slice(0, 10));
+      
     } else if (selectedTool === 'pet') {
-      result = await generateMascot(prompt, { style: 'cartoon' });
-      if (result) {
-        const content = {
-          type: 'pet',
-          name: result.name,
-          image: result.imageUrl,
-          description: `Mascota diseñada: "${prompt}"`,
-          features: ['Animación idle', 'Animación celebración', 'Personalizable', 'Aplicable al perfil'],
-          timestamp: Date.now(),
-          provider: result.provider,
-        };
-        setGeneratedContent(content);
-        setHistory([content, ...history].slice(0, 10));
+      // Simulate mascot generation with progress
+      await simulateProgress([
+        'Analizando características...',
+        'Diseñando apariencia...',
+        'Aplicando estilo...',
+        'Generando mascota...'
+      ]);
+
+      // Select mascot based on type
+      let imageUrl = ASSETS.mascots.llamaBlanca;
+      if (mascotType === 'cuy') {
+        imageUrl = ASSETS.mascots.cuyMatematico;
       }
+
+      const mascotName = `${mascotColor} ${mascotType === 'cuy' ? 'Cuy' : 'Llama'} ${mascotStyle}`;
+      
+      const content = {
+        type: 'pet',
+        name: mascotName,
+        image: imageUrl,
+        description: `Mascota diseñada: ${mascotType} ${mascotStyle} de color ${mascotColor} con ${mascotAccessory}`,
+        features: ['Animación idle', 'Animación celebración', 'Personalizable', 'Aplicable al perfil'],
+        timestamp: Date.now(),
+        provider: 'mock-mascot',
+        style: mascotStyle,
+        color: mascotColor,
+        accessory: mascotAccessory,
+      };
+      setGeneratedContent(content);
+      setHistory([content, ...history].slice(0, 10));
     }
   }
 
@@ -276,84 +345,224 @@ export default function AiLabPage() {
 
             {/* Input Section */}
             <div className="card-glass rounded-2xl p-6">
-              <h3 className="font-bold mb-3">Describe lo que quieres crear</h3>
+              <h3 className="font-bold mb-4 text-lg">
+                {selectedTool === 'world' && '🎨 Diseñador de Mundo'}
+                {selectedTool === 'audio' && '🎵 Sintetizador de Audio'}
+                {selectedTool === 'pet' && '🐹 Diseñador de Mascota'}
+              </h3>
+              <p className="text-sm text-gray-400 mb-6">
+                {tools.find(t => t.id === selectedTool)?.desc}
+              </p>
               
-              {/* Presets */}
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2">Ideas rápidas:</p>
-                <div className="flex flex-wrap gap-2">
-                  {presets[selectedTool]?.map((p, i) => (
-                    <motion.button
-                      key={i}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setPrompt(p)}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-rush-purple/10 text-rush-purple-light hover:bg-rush-purple/20 transition-colors border border-rush-purple/20"
-                    >
-                      {p}
-                    </motion.button>
-                  ))}
+              {/* World & Audio: Text Input with Presets */}
+              {(selectedTool === 'world' || selectedTool === 'audio') && (
+                <>
+                  {/* Presets */}
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-500 mb-2">Ejemplos rápidos:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(selectedTool === 'world' ? worldPresets : audioPresets).map((preset, i) => (
+                        <motion.button
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setPrompt(preset.value)}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-rush-purple/10 text-rush-purple-light hover:bg-rush-purple/20 transition-colors border border-rush-purple/20"
+                        >
+                          {preset.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Prompt Input */}
+                  <textarea
+                    value={prompt}
+                    onChange={e => setPrompt(e.target.value)}
+                    className="w-full bg-rush-darker border-2 border-rush-purple/30 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-rush-orange transition-colors resize-none h-32"
+                    placeholder={tools.find(t => t.id === selectedTool)?.placeholder}
+                    aria-label="Prompt para generación IA"
+                  />
+                </>
+              )}
+
+              {/* Pet: Visual Form */}
+              {selectedTool === 'pet' && (
+                <div className="space-y-5">
+                  {/* Type */}
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-gray-300">Tipo de mascota</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: 'cuy', label: '🐹 Cuy', desc: 'Pequeño y adorable' },
+                        { value: 'llama', label: '🦙 Llama', desc: 'Elegante y fiel' },
+                      ].map(option => (
+                        <motion.button
+                          key={option.value}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setMascotType(option.value)}
+                          className={`p-4 rounded-xl border-2 transition-all ${
+                            mascotType === option.value
+                              ? 'border-rush-orange bg-rush-orange/10'
+                              : 'border-rush-purple/30 bg-rush-darker hover:border-rush-purple/50'
+                          }`}
+                        >
+                          <div className="text-3xl mb-1">{option.label.split(' ')[0]}</div>
+                          <div className="font-bold text-sm">{option.label.split(' ')[1]}</div>
+                          <div className="text-xs text-gray-400">{option.desc}</div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Style */}
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-gray-300">Estilo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { value: 'gamer', label: '🎮 Gamer' },
+                        { value: 'dorado', label: '✨ Dorado' },
+                        { value: 'cyberpunk', label: '🌃 Cyberpunk' },
+                        { value: 'samurai', label: '⚔️ Samurai' },
+                      ].map(option => (
+                        <motion.button
+                          key={option.value}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setMascotStyle(option.value)}
+                          className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                            mascotStyle === option.value
+                              ? 'border-rush-orange bg-rush-orange/10 text-rush-orange'
+                              : 'border-rush-purple/30 bg-rush-darker hover:border-rush-purple/50'
+                          }`}
+                        >
+                          {option.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Color */}
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-gray-300">Color</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { value: 'blanco', label: 'Blanco', color: 'bg-white' },
+                        { value: 'marron', label: 'Marrón', color: 'bg-amber-700' },
+                        { value: 'dorado', label: 'Dorado', color: 'bg-yellow-500' },
+                        { value: 'morado', label: 'Morado', color: 'bg-purple-600' },
+                      ].map(option => (
+                        <motion.button
+                          key={option.value}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setMascotColor(option.value)}
+                          className={`p-3 rounded-lg border-2 transition-all ${
+                            mascotColor === option.value
+                              ? 'border-rush-orange bg-rush-orange/10'
+                              : 'border-rush-purple/30 bg-rush-darker hover:border-rush-purple/50'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-full ${option.color} mx-auto mb-1 border-2 border-white/20`} />
+                          <div className="text-xs font-medium">{option.label}</div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Accessory */}
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-gray-300">Accesorio</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { value: 'audifonos', label: '🎧 Audífonos' },
+                        { value: 'gafas', label: '🕶️ Gafas' },
+                        { value: 'casco', label: '⛑️ Casco' },
+                        { value: 'armadura', label: '🛡️ Armadura' },
+                      ].map(option => (
+                        <motion.button
+                          key={option.value}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setMascotAccessory(option.value)}
+                          className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                            mascotAccessory === option.value
+                              ? 'border-rush-orange bg-rush-orange/10 text-rush-orange'
+                              : 'border-rush-purple/30 bg-rush-darker hover:border-rush-purple/50'
+                          }`}
+                        >
+                          {option.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Prompt Input */}
-              <textarea
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-                className="w-full bg-rush-darker border-2 border-rush-purple/30 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-rush-orange transition-colors resize-none h-32"
-                placeholder={tools.find(t => t.id === selectedTool)?.placeholder}
-                aria-label="Prompt para generación IA"
-              />
-
+              {/* Generate Button */}
               <Button
                 variant="primary"
-                className="w-full mt-4"
+                className="w-full mt-6"
                 onClick={handleGenerate}
-                disabled={!prompt || loading}
+                disabled={(selectedTool !== 'pet' && !prompt) || isGenerating}
                 size="lg"
               >
-                {loading ? (
+                {isGenerating ? (
                   <span className="flex items-center gap-2">
-                    <span className="animate-spin">🤖</span>
+                    <span className="animate-spin">⚙️</span>
                     Generando...
                   </span>
                 ) : (
-                  '✨ GENERAR'
+                  <>
+                    <span>✨</span>
+                    <span>GENERAR {selectedTool === 'world' ? 'MUNDO' : selectedTool === 'audio' ? 'AUDIO' : 'MASCOTA'}</span>
+                  </>
                 )}
               </Button>
             </div>
 
-            {/* Loading State */}
+            {/* Loading State with Progress */}
             <AnimatePresence>
-              {loading && (
+              {isGenerating && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="card-glass rounded-2xl p-8 text-center"
+                  className="card-glass rounded-2xl p-8"
                 >
-                  <div className="text-6xl mb-4 animate-bounce">🤖</div>
-                  <p className="font-bold text-lg mb-2">Creando tu contenido...</p>
-                  <p className="text-sm text-gray-400">La IA está trabajando en tu diseño</p>
-                  <div className="mt-4 w-full h-2 bg-rush-darker rounded-full overflow-hidden">
+                  <div className="text-center mb-6">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-rush-orange to-rush-purple rounded-full"
-                      initial={{ width: '0%' }}
-                      animate={{ width: '100%' }}
-                      transition={{ duration: 3 }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      className="text-6xl mb-4 inline-block"
+                    >
+                      {selectedTool === 'world' ? '🎨' : selectedTool === 'audio' ? '🎵' : '🐹'}
+                    </motion.div>
+                    <p className="font-bold text-lg mb-2">Creando tu {selectedTool === 'world' ? 'mundo' : selectedTool === 'audio' ? 'audio' : 'mascota'}...</p>
+                    <p className="text-sm text-rush-orange font-medium">{progressMessage}</p>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full h-3 bg-rush-darker rounded-full overflow-hidden mb-2">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-rush-orange via-rush-yellow to-rush-orange rounded-full"
+                      style={{ width: `${progress}%` }}
+                      transition={{ duration: 0.3 }}
                     />
                   </div>
+                  <p className="text-right text-xs text-gray-400">{Math.round(progress)}%</p>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {/* Generated Content */}
             <AnimatePresence>
-              {generatedContent && !loading && (
+              {generatedContent && !isGenerating && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
                   className="card-premium rounded-2xl p-6"
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -361,110 +570,315 @@ export default function AiLabPage() {
                     <Badge color="green">Generado</Badge>
                   </div>
 
-                  {/* Preview */}
+                  {/* World/Mascot Preview */}
                   {generatedContent.image && (
-                    <div className="relative w-full h-64 mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-rush-darker to-rush-card">
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="relative w-full h-64 mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-rush-darker to-rush-card shadow-2xl"
+                    >
                       <img 
                         src={generatedContent.image} 
                         alt={generatedContent.name}
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h4 className="font-bold text-xl text-white mb-1">{generatedContent.name}</h4>
+                        <p className="text-sm text-gray-200">{generatedContent.description}</p>
+                      </div>
+                    </motion.div>
                   )}
 
                   {/* Audio Player */}
                   {generatedContent.audioUrl && (
-                    <div className="bg-rush-darker rounded-xl p-4 mb-4">
-                      <audio controls className="w-full">
-                        <source src={generatedContent.audioUrl} type="audio/wav" />
-                        Tu navegador no soporta audio.
-                      </audio>
-                    </div>
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="bg-gradient-to-br from-rush-purple/20 to-rush-blue/20 rounded-xl p-5 mb-4 border border-rush-purple/30"
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-rush-purple/30 rounded-full flex items-center justify-center">
+                          <span className="text-2xl">🎵</span>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-lg">{generatedContent.name}</h4>
+                          <p className="text-xs text-gray-400">Duración: {generatedContent.duration}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Custom Audio Controls */}
+                      <audio 
+                        ref={audioRef}
+                        src={generatedContent.audioUrl}
+                        onEnded={() => setIsPlaying(false)}
+                        onTimeUpdate={() => {}}
+                      />
+                      
+                      <div className="space-y-3">
+                        {/* Play/Pause and Volume */}
+                        <div className="flex items-center gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              if (audioRef.current) {
+                                if (isPlaying) {
+                                  audioRef.current.pause();
+                                } else {
+                                  audioRef.current.play();
+                                }
+                                setIsPlaying(!isPlaying);
+                              }
+                            }}
+                            className="w-12 h-12 bg-rush-orange rounded-full flex items-center justify-center shadow-lg hover:shadow-rush-orange/50 transition-all"
+                          >
+                            <span className="text-xl">{isPlaying ? '⏸️' : '▶️'}</span>
+                          </motion.button>
+                          
+                          <div className="flex-1">
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.01"
+                              value={audioVolume}
+                              onChange={(e) => {
+                                const vol = parseFloat(e.target.value);
+                                setAudioVolume(vol);
+                                if (audioRef.current) {
+                                  audioRef.current.volume = vol;
+                                }
+                              }}
+                              className="w-full h-2 bg-rush-darker rounded-lg appearance-none cursor-pointer"
+                            />
+                          </div>
+                          
+                          <span className="text-sm text-gray-400">🔊 {Math.round(audioVolume * 100)}%</span>
+                          
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              if (audioRef.current) {
+                                audioRef.current.currentTime = 0;
+                                audioRef.current.play();
+                                setIsPlaying(true);
+                              }
+                            }}
+                            className="w-10 h-10 bg-rush-purple/30 rounded-full flex items-center justify-center hover:bg-rush-purple/50 transition-all"
+                          >
+                            <span>🔄</span>
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
                   )}
 
-                  <h4 className="font-bold text-lg mb-2">{generatedContent.name}</h4>
-                  <p className="text-sm text-gray-400 mb-4">{generatedContent.description}</p>
-                  
                   {/* Features */}
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     {generatedContent.features?.map((f: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2 text-sm bg-rush-darker/50 rounded-lg p-2">
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                        className="flex items-center gap-2 text-sm bg-rush-darker/50 rounded-lg p-2"
+                      >
                         <span className="text-rush-green">✓</span>
                         <span>{f}</span>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
 
-                  {/* Provider Info */}
-                  <div className="bg-rush-darker/50 rounded-lg p-3 mb-4">
-                    <p className="text-xs text-gray-500">
-                      Generado por: <span className="text-rush-purple-light">{generatedContent.provider}</span>
-                    </p>
-                  </div>
-
                   {/* Actions */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
-                      VER PREVIEW
-                    </Button>
-                    <Button variant="primary" size="sm" onClick={handleApply}>
-                      APLICAR
-                    </Button>
+                  <div className="grid grid-cols-3 gap-3 mt-6">
+                    {generatedContent.type === 'world' && (
+                      <Button variant="primary" size="sm" onClick={handleApply}>
+                        APLICAR AL LOBBY
+                      </Button>
+                    )}
+                    {generatedContent.type === 'pet' && (
+                      <Button variant="primary" size="sm" onClick={handleApply}>
+                        APLICAR COMO MASCOTA
+                      </Button>
+                    )}
+                    {generatedContent.type === 'audio' && (
+                      <Button variant="primary" size="sm" onClick={handleApply}>
+                        APLICAR AUDIO
+                      </Button>
+                    )}
                     <Button variant="secondary" size="sm" onClick={handleSave}>
                       GUARDAR
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      setGeneratedContent(null);
+                      setPrompt('');
+                    }}>
+                      GENERAR OTRO
                     </Button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* History */}
+            {/* My Creations - History */}
             {history.length > 0 && (
-              <div className="card-glass rounded-2xl p-6">
-                <h3 className="font-bold mb-4">📜 Historial de Generaciones</h3>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-glass rounded-2xl p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-xl font-bold">🎨 MIS CREACIONES</h3>
+                  <Badge color="purple">{history.length} items</Badge>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
                   {history.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-rush-darker/50 rounded-lg hover:bg-rush-darker transition-colors">
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.05 }}
+                      whileHover={{ scale: 1.05 }}
+                      className="cursor-pointer relative rounded-xl overflow-hidden border-2 border-rush-purple/30 bg-rush-darker hover:border-rush-orange/50 transition-all"
+                      onClick={() => {
+                        setGeneratedContent(item);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
                       {item.image && (
-                        <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                        <div className="relative w-full h-32 overflow-hidden">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <p className="text-xs font-bold text-white truncate">{item.name}</p>
+                            <p className="text-[10px] text-gray-300">
+                              {new Date(item.timestamp).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(item.timestamp).toLocaleString()}
-                        </p>
+                      {item.audioUrl && (
+                        <div className="p-3 bg-gradient-to-br from-rush-purple/20 to-rush-blue/20">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">🎵</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold truncate">{item.name}</p>
+                              <p className="text-[10px] text-gray-400">{item.duration}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2">
+                        <Badge color={item.type === 'world' ? 'orange' : item.type === 'audio' ? 'blue' : 'purple'}>
+                          {item.type === 'world' ? '🎨' : item.type === 'audio' ? '🎵' : '🐹'}
+                        </Badge>
                       </div>
-                      <Badge color="purple">{item.type}</Badge>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
           </motion.div>
         )}
       </div>
 
       {/* Preview Modal */}
-      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title="Preview Completo">
+      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title="">
         {generatedContent && (
           <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-2xl font-bold">Vista Previa</h3>
+              <Badge color="green">Generado</Badge>
+            </div>
+
             {generatedContent.image && (
-              <img 
-                src={generatedContent.image} 
-                alt={generatedContent.name}
-                className="w-full rounded-xl mb-4"
-              />
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="relative w-full h-80 mb-4 rounded-xl overflow-hidden shadow-2xl"
+              >
+                <img 
+                  src={generatedContent.image} 
+                  alt={generatedContent.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <h4 className="font-bold text-xl text-white mb-1">{generatedContent.name}</h4>
+                  <p className="text-sm text-gray-200">{generatedContent.description}</p>
+                </div>
+              </motion.div>
             )}
+
             {generatedContent.audioUrl && (
-              <audio controls className="w-full mb-4">
-                <source src={generatedContent.audioUrl} type="audio/wav" />
-              </audio>
+              <div className="bg-gradient-to-br from-rush-purple/20 to-rush-blue/20 rounded-xl p-5 mb-4 border border-rush-purple/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-rush-purple/30 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">🎵</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-lg">{generatedContent.name}</h4>
+                    <p className="text-xs text-gray-400">Duración: {generatedContent.duration}</p>
+                  </div>
+                </div>
+                
+                <audio 
+                  ref={audioRef}
+                  src={generatedContent.audioUrl}
+                  onEnded={() => setIsPlaying(false)}
+                />
+                
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      if (audioRef.current) {
+                        if (isPlaying) {
+                          audioRef.current.pause();
+                        } else {
+                          audioRef.current.play();
+                        }
+                        setIsPlaying(!isPlaying);
+                      }
+                    }}
+                    className="w-12 h-12 bg-rush-orange rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    <span className="text-xl">{isPlaying ? '⏸️' : '▶️'}</span>
+                  </motion.button>
+                  
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={audioVolume}
+                      onChange={(e) => {
+                        const vol = parseFloat(e.target.value);
+                        setAudioVolume(vol);
+                        if (audioRef.current) {
+                          audioRef.current.volume = vol;
+                        }
+                      }}
+                      className="w-full h-2 bg-rush-darker rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                  
+                  <span className="text-sm text-gray-400">🔊 {Math.round(audioVolume * 100)}%</span>
+                </div>
+              </div>
             )}
-            <h3 className="font-display text-xl font-bold mb-2">{generatedContent.name}</h3>
-            <p className="text-sm text-gray-400 mb-4">{generatedContent.description}</p>
-            <div className="grid grid-cols-2 gap-3">
+
+            <div className="grid grid-cols-2 gap-3 mt-6">
               <Button variant="primary" onClick={handleApply}>
-                APLICAR AL LOBBY
+                {generatedContent.type === 'world' ? 'APLICAR AL LOBBY' : 
+                 generatedContent.type === 'pet' ? 'APLICAR COMO MASCOTA' : 
+                 'APLICAR AUDIO'}
               </Button>
               <Button variant="outline" onClick={() => setShowPreview(false)}>
                 CERRAR
