@@ -1,0 +1,17 @@
+{
+  "name": "math-rush-edge-functions",
+  "version": "1.0.0",
+  "description": "Edge Functions for Math Rush World Designer AI",
+  "scripts": {
+    "deploy": "supabase functions deploy generate-world-theme",
+    "deploy:all": "supabase functions deploy generate-world-theme",
+    "serve": "supabase functions serve",
+    "logs": "supabase functions logs generate-world-theme"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "supabase": "^1.148.0"
+  }
+}
