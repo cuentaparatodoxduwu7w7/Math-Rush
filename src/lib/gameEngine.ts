@@ -119,37 +119,124 @@ export function calculateCoinsReward(score: number, combo: number): number {
 // SERVICES (MOCK ONLY)
 // ============================================================
 
-export function getUserEntitlements(role: string, plan: string) {
-  const entitlements = {
-    canScan: true,
-    scanLimit: 3,
-    canUseAI: false,
-    aiLimit: 0,
-    canAccessLegend: false,
-    canAccessTeacherTools: false,
-    canRemoveAds: false,
-    canUseAllSkins: false,
-    canAccessAdmin: false,
-    canAccessDeveloper: false,
+export function getUserEntitlements(role: string, activePlan: string) {
+  // Plan base entitlements
+  const planEntitlements: Record<string, any> = {
+    free: {
+      canScan: true,
+      scanLimit: 3,
+      canUseAI: false,
+      aiLimit: 0,
+      canAccessLegend: false,
+      canAccessTeacherTools: false,
+      canRemoveAds: false,
+      canUseAllSkins: false,
+      canAccessPreU: false,
+      canAccessSimulations: false,
+      canAccessAdvancedStats: false,
+      canAccessDuel: false,
+    },
+    rush: {
+      canScan: true,
+      scanLimit: 10,
+      canUseAI: true,
+      aiLimit: 20,
+      canAccessLegend: false,
+      canAccessTeacherTools: false,
+      canRemoveAds: true,
+      canUseAllSkins: false,
+      canAccessPreU: false,
+      canAccessSimulations: false,
+      canAccessAdvancedStats: false,
+      canAccessDuel: false,
+    },
+    legend: {
+      canScan: true,
+      scanLimit: 999,
+      canUseAI: true,
+      aiLimit: 999,
+      canAccessLegend: true,
+      canAccessTeacherTools: false,
+      canRemoveAds: true,
+      canUseAllSkins: true,
+      canAccessPreU: true,
+      canAccessSimulations: true,
+      canAccessAdvancedStats: true,
+      canAccessDuel: true,
+    },
+    teacher: {
+      canScan: true,
+      scanLimit: 50,
+      canUseAI: true,
+      aiLimit: 50,
+      canAccessLegend: false,
+      canAccessTeacherTools: true,
+      canRemoveAds: true,
+      canUseAllSkins: false,
+      canAccessPreU: false,
+      canAccessSimulations: false,
+      canAccessAdvancedStats: false,
+      canAccessDuel: false,
+    },
   };
 
-  if (role === 'developer') {
-    return { ...entitlements, scanLimit: 999, canUseAI: true, aiLimit: 999, canAccessLegend: true, canAccessTeacherTools: true, canRemoveAds: true, canUseAllSkins: true, canAccessAdmin: true, canAccessDeveloper: true };
-  }
-  if (role === 'admin') {
-    return { ...entitlements, canAccessAdmin: true, canUseAllSkins: true };
-  }
-  if (role === 'teacher') {
-    return { ...entitlements, canAccessTeacherTools: true, scanLimit: 50, canUseAI: true, aiLimit: 50 };
-  }
-  if (plan === 'legend') {
-    return { ...entitlements, scanLimit: 999, canUseAI: true, aiLimit: 999, canAccessLegend: true, canRemoveAds: true, canUseAllSkins: true };
-  }
-  if (plan === 'rush') {
-    return { ...entitlements, scanLimit: 10, canUseAI: true, aiLimit: 20, canRemoveAds: true };
-  }
+  // Role-based overrides
+  const roleOverrides: Record<string, any> = {
+    admin: {
+      canAccessAdmin: true,
+      canUseAllSkins: true,
+    },
+    developer: {
+      canAccessAdmin: true,
+      canAccessDeveloper: true,
+      canUseAllSkins: true,
+      // Developer gets the plan's entitlements, not everything
+    },
+  };
+
+  // Get base entitlements from plan
+  const baseEntitlements = planEntitlements[activePlan] || planEntitlements.free;
+
+  // Apply role overrides
+  const roleOverride = roleOverrides[role] || {};
+
+  return {
+    ...baseEntitlements,
+    ...roleOverride,
+    canAccessAdmin: role === 'admin' || role === 'developer',
+    canAccessDeveloper: role === 'developer',
+  };
+}
+
+// Helper function to check if user has a specific feature
+export function hasFeature(entitlements: any, featureName: string): boolean {
+  const featureMap: Record<string, string> = {
+    'scan': 'canScan',
+    'unlimited_scans': 'scanLimit',
+    'ai_cuy_sabio': 'canUseAI',
+    'legend_features': 'canAccessLegend',
+    'teacher_dashboard': 'canAccessTeacherTools',
+    'no_ads': 'canRemoveAds',
+    'all_skins': 'canUseAllSkins',
+    'pre_u': 'canAccessPreU',
+    'simulations': 'canAccessSimulations',
+    'advanced_stats': 'canAccessAdvancedStats',
+    'duel_mode': 'canAccessDuel',
+    'admin_panel': 'canAccessAdmin',
+    'developer_panel': 'canAccessDeveloper',
+  };
+
+  const entitlementKey = featureMap[featureName];
+  if (!entitlementKey) return false;
+
+  const value = entitlements[entitlementKey];
   
-  return entitlements;
+  // Special case for unlimited_scans
+  if (featureName === 'unlimited_scans') {
+    return typeof value === 'number' && value >= 999;
+  }
+
+  return Boolean(value);
 }
 
 // Analytics tracking (MOCK ONLY - would send to backend in production)

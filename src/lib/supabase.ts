@@ -179,6 +179,10 @@ export interface UserEntitlements {
   canUseAllSkins: boolean;
   canAccessAdmin: boolean;
   canAccessDeveloper: boolean;
+  canAccessPreU: boolean;
+  canAccessSimulations: boolean;
+  canAccessAdvancedStats: boolean;
+  canAccessDuel: boolean;
 }
 
 export interface TeacherClass {

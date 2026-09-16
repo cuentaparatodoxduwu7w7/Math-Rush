@@ -242,16 +242,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isDeveloper = user?.email === DEVELOPER_EMAIL || user?.role === 'developer';
 
+  // Determine active plan: developer can test any plan, others use 'free'
+  const activePlan = isDeveloper ? developerPlan : 'free';
+
   const entitlements = getUserEntitlements(
     user?.role || 'student',
-    isDeveloper ? developerPlan : 'free'
+    activePlan
   );
 
   const activateDeveloperMode = useCallback(() => {
     // Only allow if user email matches developer email
     if (user?.email === DEVELOPER_EMAIL) {
       setUser(DEVELOPER_MOCK_USER);
-      setDeveloperPlanState('developer');
+      setDeveloperPlanState('free'); // Start with free plan for testing
     }
   }, [user]);
 
@@ -265,23 +268,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setDeveloperPlan = useCallback((plan: 'free' | 'rush' | 'legend' | 'teacher') => {
     if (!isDeveloper) return;
     
+    // Only update the plan, keep developer role
     setDeveloperPlanState(plan);
-    
-    // Update user role based on plan
-    const roleMap: Record<string, UserRole> = {
-      'free': 'student',
-      'rush': 'student',
-      'legend': 'student',
-      'teacher': 'teacher',
-    };
-    
-    if (user?.email === DEVELOPER_EMAIL) {
-      setUser({
-        ...DEVELOPER_MOCK_USER,
-        role: plan === 'teacher' ? 'teacher' : 'developer',
-      });
-    }
-  }, [isDeveloper, user]);
+  }, [isDeveloper]);
 
   return (
     <AuthContext.Provider value={{

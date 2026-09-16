@@ -69,18 +69,19 @@ export default function DeveloperPanel() {
   };
 
   const unlockedFeatures = [
-    { name: 'Todas las skins', unlocked: true, icon: '👕' },
-    { name: 'Todas las mascotas', unlocked: true, icon: '🐹' },
-    { name: 'Todos los fondos', unlocked: true, icon: '🌌' },
-    { name: 'Todos los efectos', unlocked: true, icon: '✨' },
-    { name: 'Laboratorio IA ilimitado', unlocked: true, icon: '🤖' },
-    { name: 'Escáner ilimitado', unlocked: true, icon: '📸' },
+    { name: 'Escáner básico (3/día)', unlocked: entitlements.canScan && entitlements.scanLimit === 3, icon: '📸' },
+    { name: 'Escáner premium (10/día)', unlocked: entitlements.canScan && entitlements.scanLimit === 10, icon: '📸' },
+    { name: 'Escáner ilimitado', unlocked: entitlements.canScan && entitlements.scanLimit >= 999, icon: '📸' },
     { name: 'Cuy Sabio (IA)', unlocked: entitlements.canUseAI, icon: '🧠' },
-    { name: 'Modo Pre-U', unlocked: entitlements.canAccessLegend, icon: '🎓' },
-    { name: 'Simulacros', unlocked: entitlements.canAccessLegend, icon: '📝' },
-    { name: 'Estadísticas avanzadas', unlocked: entitlements.canAccessLegend, icon: '📊' },
-    { name: 'Panel docente', unlocked: entitlements.canAccessTeacherTools, icon: '👨‍🏫' },
     { name: 'Sin anuncios', unlocked: entitlements.canRemoveAds, icon: '🚫' },
+    { name: 'Todas las skins', unlocked: entitlements.canUseAllSkins, icon: '👕' },
+    { name: 'Modo Pre-U', unlocked: entitlements.canAccessPreU, icon: '🎓' },
+    { name: 'Simulacros', unlocked: entitlements.canAccessSimulations, icon: '📝' },
+    { name: 'Estadísticas avanzadas', unlocked: entitlements.canAccessAdvancedStats, icon: '📊' },
+    { name: 'Modo Duelo', unlocked: entitlements.canAccessDuel, icon: '⚔️' },
+    { name: 'Panel docente', unlocked: entitlements.canAccessTeacherTools, icon: '👨‍🏫' },
+    { name: 'Panel admin', unlocked: entitlements.canAccessAdmin, icon: '🛡️' },
+    { name: 'Panel developer', unlocked: entitlements.canAccessDeveloper, icon: '🛠️' },
   ];
 
   return (

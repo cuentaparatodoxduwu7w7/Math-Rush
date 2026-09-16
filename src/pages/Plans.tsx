@@ -7,17 +7,30 @@ import { MOCK_PLANS } from '../lib/mockData';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function PlansPage() {
-  const { user, updateProfile, isDeveloper } = useAuth();
+  const { user, updateProfile, isDeveloper, developerPlan, setDeveloperPlan } = useAuth();
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<typeof MOCK_PLANS[0] | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success' | 'cancelled'>('idle');
   const [showTestMode, setShowTestMode] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<string>('free');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Use developerPlan for developers, otherwise 'free'
+  const currentPlan = isDeveloper ? developerPlan : 'free';
 
   function handleSelectPlan(plan: typeof MOCK_PLANS[0]) {
     if (plan.id === 'free') return;
+    
+    // If developer, activate test mode immediately
+    if (isDeveloper) {
+      setDeveloperPlan(plan.id as any);
+      setSelectedPlan(plan);
+      setShowCheckout(true);
+      setCheckoutStatus('success'); // Skip processing for developer
+      return;
+    }
+    
+    // Regular user flow
     setSelectedPlan(plan);
     setShowCheckout(true);
     setCheckoutStatus('idle');
@@ -30,11 +43,8 @@ export default function PlansPage() {
     setCheckoutStatus('success');
     
     // Activar plan en modo demo
-    if (selectedPlan) {
-      setCurrentPlan(selectedPlan.id);
-      if (selectedPlan.id === 'teacher') {
-        updateProfile({ role: 'teacher' });
-      }
+    if (selectedPlan && isDeveloper) {
+      setDeveloperPlan(selectedPlan.id as any);
     }
   }
 
@@ -49,19 +59,13 @@ export default function PlansPage() {
 
   function activateTestPlan(planId: string) {
     if (!isDeveloper) return;
-    setCurrentPlan(planId);
-    if (planId === 'teacher') {
-      updateProfile({ role: 'teacher' });
-    } else if (planId === 'free') {
-      updateProfile({ role: 'student' });
-    }
+    setDeveloperPlan(planId as any);
     setShowTestMode(false);
   }
 
   function resetToFree() {
     if (!isDeveloper) return;
-    setCurrentPlan('free');
-    updateProfile({ role: 'student' });
+    setDeveloperPlan('free');
     setShowTestMode(false);
   }
 
@@ -148,19 +152,36 @@ export default function PlansPage() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 bg-gradient-to-r from-rush-orange/20 to-rush-purple/20 border border-rush-orange/30 rounded-2xl p-5"
+            className={`mb-8 rounded-2xl p-5 ${
+              currentPlan !== 'free' 
+                ? 'bg-gradient-to-r from-rush-green/20 to-emerald-500/20 border-2 border-rush-green/50' 
+                : 'bg-gradient-to-r from-rush-orange/20 to-rush-purple/20 border border-rush-orange/30'
+            }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">🛠️</span>
+                <span className="text-3xl">{currentPlan !== 'free' ? '🧪' : '🛠️'}</span>
                 <div>
-                  <p className="font-bold text-rush-orange">Modo Developer Activo</p>
-                  <p className="text-sm text-gray-400">Tienes acceso completo a todas las funciones de prueba</p>
+                  <p className="font-bold text-rush-orange">
+                    {currentPlan !== 'free' ? '🧪 MODO DE PRUEBAS ACTIVADO' : 'Modo Developer Activo'}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {currentPlan !== 'free' 
+                      ? `Probando plan: ${MOCK_PLANS.find(p => p.id === currentPlan)?.name}`
+                      : 'Tienes acceso completo a todas las funciones de prueba'}
+                  </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setShowTestMode(true)}>
-                🧪 Modo Pruebas
-              </Button>
+              <div className="flex gap-2">
+                {currentPlan !== 'free' && (
+                  <Button variant="outline" size="sm" onClick={resetToFree}>
+                    Volver a FREE
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => setShowTestMode(true)}>
+                  🧪 Modo Pruebas
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -227,14 +248,27 @@ export default function PlansPage() {
                 </ul>
 
                 {/* CTA */}
-                <Button
-                  variant={currentPlan === plan.id ? 'ghost' : plan.highlighted ? 'primary' : 'outline'}
-                  className="w-full"
-                  onClick={() => handleSelectPlan(plan)}
-                  disabled={plan.id === 'free' || currentPlan === plan.id}
-                >
-                  {currentPlan === plan.id ? '✓ PLAN ACTUAL' : plan.id === 'free' ? 'PLAN BÁSICO' : 'ELEGIR PLAN'}
-                </Button>
+                {isDeveloper ? (
+                  <div className="space-y-2">
+                    <Button
+                      variant={currentPlan === plan.id ? 'ghost' : 'secondary'}
+                      className="w-full"
+                      onClick={() => handleSelectPlan(plan)}
+                      disabled={currentPlan === plan.id}
+                    >
+                      {currentPlan === plan.id ? '✓ PLAN ACTUAL' : `🧪 PROBAR ${plan.name}`}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant={currentPlan === plan.id ? 'ghost' : plan.highlighted ? 'primary' : 'outline'}
+                    className="w-full"
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={plan.id === 'free' || currentPlan === plan.id}
+                  >
+                    {currentPlan === plan.id ? '✓ PLAN ACTUAL' : plan.id === 'free' ? 'PLAN BÁSICO' : 'ELEGIR PLAN'}
+                  </Button>
+                )}
               </div>
             </motion.div>
           ))}
