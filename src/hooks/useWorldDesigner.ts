@@ -32,7 +32,20 @@ export interface WorldTheme {
   decorations?: any[];
   animations?: Record<string, any>;
   layout?: Record<string, any>;
-  minigame?: any;
+  minigame?: {
+    gameType: string;
+    name: string;
+    description: string;
+    theme: any;
+    difficulty: string;
+    duration: number;
+    operations: string[];
+    questions: number;
+    numberRange: { min: number; max: number };
+    rules: any;
+    rewards: { xp: number; coins: number; gems?: number };
+    visual: any;
+  };
   expires_at: string;
   is_active: boolean;
   created_at: string;

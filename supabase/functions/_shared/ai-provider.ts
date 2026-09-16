@@ -211,23 +211,97 @@ function buildUserPrompt(request: WorldDesignRequest): string {
 
   if (request.includeMinigame) {
     prompt += `\n\nAlso create a mini-game with difficulty "${request.difficulty || 'basico'}" that fits this world theme.`;
-    prompt += `\n\nMINIGAME STRUCTURE (include in response):
+    prompt += `\n\nCRITICAL: The mini-game must follow this EXACT JSON schema. NO executable code allowed - only configuration data.
+
+MINIGAME SCHEMA:
 {
   "minigame": {
-    "type": "quiz|puzzle|challenge",
-    "theme": "string - Theme of the minigame",
-    "difficulty": "principiante|basico|intermedio|avanzado",
-    "rules": {},
-    "content": {
-      "questions": [
-        {
-          "question": "string",
-          "options": ["string", "string", "string", "string"],
-          "correct": number (0-3),
-          "explanation": "string"
-        }
-      ]
+    "gameType": "quiz" | "runner" | "puzzle" | "memory" | "boss" | "challenge",
+    "name": "string - Creative name for the mini-game",
+    "description": "string - Brief description",
+    "theme": {
+      "background": "#hex - Background color",
+      "primary": "#hex - Primary color",
+      "secondary": "#hex - Secondary color",
+      "accent": "#hex - Accent color",
+      "decorations": ["string - decoration names"]
+    },
+    "difficulty": "easy" | "medium" | "hard" | "expert",
+    "duration": number (10-300 seconds),
+    "operations": ["addition" | "subtraction" | "multiplication" | "division" | "mixed"],
+    "questions": number (5-20),
+    "numberRange": {
+      "min": number (1-1000),
+      "max": number (1-10000)
+    },
+    "rules": {
+      "type": "quiz",
+      "timePerQuestion": number (5-30),
+      "showTimer": boolean,
+      "allowRetry": boolean,
+      "feedbackType": "immediate" | "end"
+    },
+    "rewards": {
+      "xp": number (10-500),
+      "coins": number (5-100),
+      "gems": number (0-10)
+    },
+    "visual": {
+      "character": "string - character name",
+      "effects": ["string - effect names"],
+      "animations": ["string - animation names"]
     }
+  }
+}
+
+RULES FOR MINIGAME GENERATION:
+1. NO JavaScript, NO HTML, NO executable code - ONLY configuration data
+2. All colors must be valid hex codes (#RRGGBB)
+3. All numbers must be within specified ranges
+4. gameType must be one of: quiz, runner, puzzle, memory, boss, challenge
+5. difficulty must be one of: easy, medium, hard, expert
+6. operations must be from: addition, subtraction, multiplication, division, mixed
+7. duration must be between 10 and 300 seconds
+8. questions must be between 5 and 20
+9. numberRange.min must be >= 1 and < numberRange.max
+10. numberRange.max must be <= 10000
+11. rewards.xp must be between 10 and 500
+12. rewards.coins must be between 5 and 100
+13. rewards.gems must be between 0 and 10
+14. For quiz type: timePerQuestion must be 5-30, showTimer and allowRetry must be boolean, feedbackType must be "immediate" or "end"
+15. All string values must be in Spanish
+16. Theme colors should match the world theme colors
+17. Visual elements should reference existing Math-Rush assets only
+
+EXAMPLE FOR QUIZ TYPE:
+{
+  "gameType": "quiz",
+  "name": "Piratas Espaciales",
+  "description": "Resuelve operaciones matemáticas para derrotar piratas espaciales",
+  "theme": {
+    "background": "#0a0a2e",
+    "primary": "#ff6b35",
+    "secondary": "#f7931e",
+    "accent": "#ffd700",
+    "decorations": ["stars", "planets"]
+  },
+  "difficulty": "medium",
+  "duration": 60,
+  "operations": ["addition", "multiplication"],
+  "questions": 10,
+  "numberRange": { "min": 1, "max": 100 },
+  "rules": {
+    "type": "quiz",
+    "timePerQuestion": 15,
+    "showTimer": true,
+    "allowRetry": false,
+    "feedbackType": "immediate"
+  },
+  "rewards": { "xp": 100, "coins": 50, "gems": 2 },
+  "visual": {
+    "character": "cuy-pirate",
+    "effects": ["sparkle", "explosion"],
+    "animations": ["bounce", "fade"]
   }
 }`;
   }

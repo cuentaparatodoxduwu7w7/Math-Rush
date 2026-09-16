@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Button, Badge, Modal } from '../components/ui';
 import { useWorldDesigner, WorldTheme } from '../hooks/useWorldDesigner';
+import MiniGamePlayer from './MiniGamePlayer';
 
 interface WorldDesignerProps {
   onClose?: () => void;
@@ -30,6 +31,7 @@ export default function WorldDesigner({ onClose }: WorldDesignerProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<WorldTheme | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [activeMinigame, setActiveMinigame] = useState<any>(null);
 
   // Inicializar al montar
   useEffect(() => {
@@ -42,6 +44,14 @@ export default function WorldDesigner({ onClose }: WorldDesignerProps) {
     { label: '🌋 Volcán de números', value: 'Volcán activo con ríos de números y lava de ecuaciones matemáticas' },
     { label: '🌃 Ciudad cyberpunk', value: 'Ciudad cyberpunk futurista con luces de neón y fórmulas matemáticas flotantes' },
     { label: '🌳 Bosque matemático', value: 'Bosque encantado con árboles de fractales y flores geométricas' },
+  ];
+
+  const minigamePresets = [
+    { label: '🏴‍☠️ Piratas espaciales', value: 'Quiero un juego de matemáticas sobre piratas espaciales con multiplicaciones' },
+    { label: '🌃 Carrera cyberpunk', value: 'Quiero un mini-juego tipo carrera, con dificultad difícil y 60 segundos' },
+    { label: '🧙‍♂️ Torneo de magos', value: 'Un juego de quiz mágico con sumas y restas, dificultad media' },
+    { label: '🐉 Batalla de dragones', value: 'Boss battle contra un dragón con problemas de división, dificultad expert' },
+    { label: '🎯 Desafío relámpago', value: 'Challenge de velocidad con multiplicaciones mixtas, 30 segundos' },
   ];
 
   const handleGenerate = async () => {
@@ -104,6 +114,20 @@ export default function WorldDesigner({ onClose }: WorldDesignerProps) {
     if (days > 0) return `${days} día${days > 1 ? 's' : ''}`;
     return `${hours} hora${hours > 1 ? 's' : ''}`;
   };
+
+  // Si hay un mini-juego activo, mostrar el reproductor
+  if (activeMinigame) {
+    return (
+      <MiniGamePlayer
+        schema={activeMinigame}
+        onComplete={(results) => {
+          console.log('Mini-game completed:', results);
+          setActiveMinigame(null);
+        }}
+        onExit={() => setActiveMinigame(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -204,10 +228,26 @@ export default function WorldDesigner({ onClose }: WorldDesignerProps) {
                   <p className="text-sm text-gray-400">
                     Activo hasta: {formatDate(currentTheme.expires_at)} ({getTimeRemaining(currentTheme.expires_at)})
                   </p>
+                  {currentTheme.minigame && (
+                    <p className="text-xs text-rush-orange mt-1">
+                      🎮 Mini-juego incluido: {currentTheme.minigame.name}
+                    </p>
+                  )}
                 </div>
-                <Button variant="outline" size="sm" onClick={handleRestoreDefault}>
-                  Restaurar Default
-                </Button>
+                <div className="flex gap-2">
+                  {currentTheme.minigame && (
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={() => setActiveMinigame(currentTheme.minigame)}
+                    >
+                      🎮 Jugar
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={handleRestoreDefault}>
+                    Restaurar Default
+                  </Button>
+                </div>
               </div>
             </Card>
           )}
@@ -272,6 +312,24 @@ export default function WorldDesigner({ onClose }: WorldDesignerProps) {
                   <p className="text-xs text-gray-500">Genera preguntas matemáticas</p>
                 </div>
               </label>
+
+              {/* Presets de mini-juegos */}
+              {includeMinigame && (
+                <div className="md:col-span-3">
+                  <p className="text-xs text-gray-500 mb-2">Ideas de mini-juegos:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {minigamePresets.map((preset, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPrompt(preset.value)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-rush-orange/10 text-rush-orange hover:bg-rush-orange/20 transition-colors border border-rush-orange/20"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Dificultad */}
               <div className="p-3 bg-rush-darker rounded-xl">
@@ -418,6 +476,29 @@ export default function WorldDesigner({ onClose }: WorldDesignerProps) {
                 </Badge>
               </div>
             </div>
+
+            {/* Mini-juego */}
+            {selectedTheme.minigame && (
+              <div className="pt-4 border-t border-rush-purple/20">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-bold text-sm">🎮 Mini-juego Incluido</p>
+                    <p className="text-xs text-gray-400">{selectedTheme.minigame.name}</p>
+                  </div>
+                  <Badge color="orange">{selectedTheme.minigame.gameType}</Badge>
+                </div>
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => {
+                    setActiveMinigame(selectedTheme.minigame);
+                    setShowPreview(false);
+                  }}
+                >
+                  🎮 Jugar Mini-juego
+                </Button>
+              </div>
+            )}
 
             {/* Feedback */}
             <div className="pt-4 border-t border-rush-purple/20">
