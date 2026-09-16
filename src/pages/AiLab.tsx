@@ -6,6 +6,9 @@ import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 import { ASSETS } from '../lib/assets';
 
+// Estados de la máquina de estados
+type GenerationState = 'idle' | 'generating' | 'success' | 'error' | 'cancelled';
+
 export default function AiLabPage() {
   const { user } = useAuth();
   const { 
@@ -25,9 +28,12 @@ export default function AiLabPage() {
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  
+  // Máquina de estados
+  const [generationState, setGenerationState] = useState<GenerationState>('idle');
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Mascota form state
   const [mascotType, setMascotType] = useState('cuy');
@@ -39,6 +45,10 @@ export default function AiLabPage() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioVolume, setAudioVolume] = useState(0.7);
+  
+  // Timeout ref para cancelar
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelledRef = useRef<boolean>(false);
 
   const tools = [
     { 
@@ -83,125 +93,191 @@ export default function AiLabPage() {
     { label: '⚔️ Aventura', value: 'Música épica de aventura con orquesta' },
   ];
 
-  // Simulate progress animation
-  const simulateProgress = async (messages: string[]) => {
-    setIsGenerating(true);
+  // Simulate progress animation - CORREGIDO
+  const simulateProgress = async (messages: string[]): Promise<boolean> => {
+    setGenerationState('generating');
     setProgress(0);
+    setErrorMessage('');
+    
+    let currentProgress = 0;
     
     for (let i = 0; i < messages.length; i++) {
+      // Verificar si fue cancelado
+      if (cancelledRef.current) {
+        return false;
+      }
+      
       setProgressMessage(messages[i]);
       const targetProgress = ((i + 1) / messages.length) * 100;
       
-      // Animate progress
-      while (progress < targetProgress) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        setProgress(prev => Math.min(prev + 2, targetProgress));
+      // Animar progreso usando variable local
+      while (currentProgress < targetProgress) {
+        // Verificar cancelación
+        if (cancelledRef.current) {
+          return false;
+        }
+        
+        await new Promise(resolve => {
+          timeoutRef.current = setTimeout(resolve, 50);
+        });
+        
+        currentProgress = Math.min(currentProgress + 2, targetProgress);
+        setProgress(currentProgress);
       }
       
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => {
+        timeoutRef.current = setTimeout(resolve, 800);
+      });
     }
     
     setProgress(100);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsGenerating(false);
+    await new Promise(resolve => {
+      timeoutRef.current = setTimeout(resolve, 500);
+    });
+    
+    return true;
+  };
+  
+  // Cancelar generación
+  const handleCancel = () => {
+    cancelledRef.current = true;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setGenerationState('idle');
+    setProgress(0);
+    setProgressMessage('');
   };
 
   async function handleGenerate() {
     if (!selectedTool) return;
     if (selectedTool !== 'pet' && !prompt) return;
     
+    // Reset estado
+    cancelledRef.current = false;
     clearError();
     setGeneratedContent(null);
+    setErrorMessage('');
 
-    if (selectedTool === 'world') {
-      // Simulate world generation with progress
-      await simulateProgress([
-        'Analizando idea...',
-        'Construyendo escenario...',
-        'Generando ambiente...',
-        'Aplicando detalles matemáticos...'
-      ]);
+    try {
+      // Timeout de seguridad (30 segundos)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout: La generación tardó demasiado')), 30000);
+      });
 
-      // Select appropriate background based on prompt
-      let imageUrl = ASSETS.backgrounds.space;
-      const lowerPrompt = prompt.toLowerCase();
-      
-      if (lowerPrompt.includes('espacio') || lowerPrompt.includes('space') || lowerPrompt.includes('galaxia') || lowerPrompt.includes('planeta')) {
-        imageUrl = ASSETS.backgrounds.space;
-      } else if (lowerPrompt.includes('neon') || lowerPrompt.includes('cyber') || lowerPrompt.includes('futur') || lowerPrompt.includes('ciudad')) {
-        imageUrl = ASSETS.backgrounds.neon;
-      } else if (lowerPrompt.includes('matem') || lowerPrompt.includes('geomet') || lowerPrompt.includes('número') || lowerPrompt.includes('castillo')) {
-        imageUrl = ASSETS.backgrounds.math;
-      } else if (lowerPrompt.includes('natur') || lowerPrompt.includes('bosque') || lowerPrompt.includes('verde') || lowerPrompt.includes('árbol')) {
-        imageUrl = ASSETS.backgrounds.nature;
-      }
+      // Función de generación
+      const generatePromise = async () => {
+        if (selectedTool === 'world') {
+          // Simulate world generation with progress
+          const success = await simulateProgress([
+            'Analizando idea...',
+            'Construyendo escenario...',
+            'Generando ambiente...',
+            'Aplicando detalles matemáticos...'
+          ]);
 
-      const content = {
-        type: 'world',
-        name: prompt,
-        image: imageUrl,
-        description: `Mundo generado: "${prompt}"`,
-        features: ['Fondo dinámico', 'Partículas animadas', 'Dificultad adaptativa', '+50 XP al completar'],
-        timestamp: Date.now(),
-        provider: 'mock-image',
+          // Si fue cancelado, no continuar
+          if (!success) return;
+
+          // Select appropriate background based on prompt
+          let imageUrl = ASSETS.backgrounds.space;
+          const lowerPrompt = prompt.toLowerCase();
+          
+          if (lowerPrompt.includes('espacio') || lowerPrompt.includes('space') || lowerPrompt.includes('galaxia') || lowerPrompt.includes('planeta')) {
+            imageUrl = ASSETS.backgrounds.space;
+          } else if (lowerPrompt.includes('neon') || lowerPrompt.includes('cyber') || lowerPrompt.includes('futur') || lowerPrompt.includes('ciudad')) {
+            imageUrl = ASSETS.backgrounds.neon;
+          } else if (lowerPrompt.includes('matem') || lowerPrompt.includes('geomet') || lowerPrompt.includes('número') || lowerPrompt.includes('castillo')) {
+            imageUrl = ASSETS.backgrounds.math;
+          } else if (lowerPrompt.includes('natur') || lowerPrompt.includes('bosque') || lowerPrompt.includes('verde') || lowerPrompt.includes('árbol')) {
+            imageUrl = ASSETS.backgrounds.nature;
+          }
+
+          const content = {
+            type: 'world',
+            name: prompt,
+            image: imageUrl,
+            description: `Mundo generado: "${prompt}"`,
+            features: ['Fondo dinámico', 'Partículas animadas', 'Dificultad adaptativa', '+50 XP al completar'],
+            timestamp: Date.now(),
+            provider: 'mock-image',
+          };
+          setGeneratedContent(content);
+          setHistory([content, ...history].slice(0, 10));
+          setGenerationState('success');
+          
+        } else if (selectedTool === 'audio') {
+          // Simulate audio generation with progress
+          const success = await simulateProgress([
+            'Analizando estilo musical...',
+            'Componiendo melodía...',
+            'Generando instrumentos...',
+            'Mezclando audio...'
+          ]);
+
+          // Si fue cancelado, no continuar
+          if (!success) return;
+
+          const content = {
+            type: 'audio',
+            name: prompt,
+            audioUrl: '/assets/demo/math-rush-demo.mp4', // Using demo file as audio source
+            duration: '15.0s',
+            format: 'mp4',
+            description: `Audio generado: "${prompt}"`,
+            features: ['Reproductor integrado', 'Loop disponible', 'Aplicable a juegos'],
+            timestamp: Date.now(),
+            provider: 'mock-audio',
+          };
+          setGeneratedContent(content);
+          setHistory([content, ...history].slice(0, 10));
+          setGenerationState('success');
+          
+        } else if (selectedTool === 'pet') {
+          // Simulate mascot generation with progress
+          const success = await simulateProgress([
+            'Analizando características...',
+            'Diseñando apariencia...',
+            'Aplicando estilo...',
+            'Generando mascota...'
+          ]);
+
+          // Si fue cancelado, no continuar
+          if (!success) return;
+
+          // Select mascot based on type
+          let imageUrl = ASSETS.mascots.llamaBlanca;
+          if (mascotType === 'cuy') {
+            imageUrl = ASSETS.mascots.cuyMatematico;
+          }
+
+          const mascotName = `${mascotColor} ${mascotType === 'cuy' ? 'Cuy' : 'Llama'} ${mascotStyle}`;
+          
+          const content = {
+            type: 'pet',
+            name: mascotName,
+            image: imageUrl,
+            description: `Mascota diseñada: ${mascotType} ${mascotStyle} de color ${mascotColor} con ${mascotAccessory}`,
+            features: ['Animación idle', 'Animación celebración', 'Personalizable', 'Aplicable al perfil'],
+            timestamp: Date.now(),
+            provider: 'mock-mascot',
+            style: mascotStyle,
+            color: mascotColor,
+            accessory: mascotAccessory,
+          };
+          setGeneratedContent(content);
+          setHistory([content, ...history].slice(0, 10));
+          setGenerationState('success');
+        }
       };
-      setGeneratedContent(content);
-      setHistory([content, ...history].slice(0, 10));
-      
-    } else if (selectedTool === 'audio') {
-      // Simulate audio generation with progress
-      await simulateProgress([
-        'Analizando estilo musical...',
-        'Componiendo melodía...',
-        'Generando instrumentos...',
-        'Mezclando audio...'
-      ]);
 
-      const content = {
-        type: 'audio',
-        name: prompt,
-        audioUrl: '/assets/demo/math-rush-demo.mp4', // Using demo file as audio source
-        duration: '15.0s',
-        format: 'mp4',
-        description: `Audio generado: "${prompt}"`,
-        features: ['Reproductor integrado', 'Loop disponible', 'Aplicable a juegos'],
-        timestamp: Date.now(),
-        provider: 'mock-audio',
-      };
-      setGeneratedContent(content);
-      setHistory([content, ...history].slice(0, 10));
+      // Competir entre generación y timeout
+      await Promise.race([generatePromise(), timeoutPromise]);
       
-    } else if (selectedTool === 'pet') {
-      // Simulate mascot generation with progress
-      await simulateProgress([
-        'Analizando características...',
-        'Diseñando apariencia...',
-        'Aplicando estilo...',
-        'Generando mascota...'
-      ]);
-
-      // Select mascot based on type
-      let imageUrl = ASSETS.mascots.llamaBlanca;
-      if (mascotType === 'cuy') {
-        imageUrl = ASSETS.mascots.cuyMatematico;
-      }
-
-      const mascotName = `${mascotColor} ${mascotType === 'cuy' ? 'Cuy' : 'Llama'} ${mascotStyle}`;
-      
-      const content = {
-        type: 'pet',
-        name: mascotName,
-        image: imageUrl,
-        description: `Mascota diseñada: ${mascotType} ${mascotStyle} de color ${mascotColor} con ${mascotAccessory}`,
-        features: ['Animación idle', 'Animación celebración', 'Personalizable', 'Aplicable al perfil'],
-        timestamp: Date.now(),
-        provider: 'mock-mascot',
-        style: mascotStyle,
-        color: mascotColor,
-        accessory: mascotAccessory,
-      };
-      setGeneratedContent(content);
-      setHistory([content, ...history].slice(0, 10));
+    } catch (error) {
+      console.error('Error en generación:', error);
+      setGenerationState('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Error desconocido');
     }
   }
 
@@ -505,10 +581,10 @@ export default function AiLabPage() {
                 variant="primary"
                 className="w-full mt-6"
                 onClick={handleGenerate}
-                disabled={(selectedTool !== 'pet' && !prompt) || isGenerating}
+                disabled={(selectedTool !== 'pet' && !prompt) || generationState === 'generating'}
                 size="lg"
               >
-                {isGenerating ? (
+                {generationState === 'generating' ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin">⚙️</span>
                     Generando...
@@ -524,7 +600,7 @@ export default function AiLabPage() {
 
             {/* Loading State with Progress */}
             <AnimatePresence>
-              {isGenerating && (
+              {generationState === 'generating' && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -551,14 +627,62 @@ export default function AiLabPage() {
                       transition={{ duration: 0.3 }}
                     />
                   </div>
-                  <p className="text-right text-xs text-gray-400">{Math.round(progress)}%</p>
+                  <p className="text-right text-xs text-gray-400 mb-4">{Math.round(progress)}%</p>
+                  
+                  {/* Cancel Button */}
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleCancel}
+                  >
+                    ❌ CANCELAR GENERACIÓN
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Error State */}
+            <AnimatePresence>
+              {generationState === 'error' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="card-glass rounded-2xl p-8 border-2 border-red-500/30"
+                >
+                  <div className="text-center">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <p className="font-bold text-lg mb-2 text-red-400">Error en la generación</p>
+                    <p className="text-sm text-gray-400 mb-6">
+                      {errorMessage || 'Ups, no pudimos completar la generación.'}
+                    </p>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="primary"
+                        className="flex-1"
+                        onClick={handleGenerate}
+                      >
+                        🔄 REINTENTAR
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setGenerationState('idle');
+                          setErrorMessage('');
+                        }}
+                      >
+                        CERRAR
+                      </Button>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {/* Generated Content */}
             <AnimatePresence>
-              {generatedContent && !isGenerating && (
+              {generatedContent && generationState !== 'generating' && generationState !== 'error' && (
                 <motion.div
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
