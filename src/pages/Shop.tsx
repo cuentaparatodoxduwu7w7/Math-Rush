@@ -4,9 +4,11 @@ import { AppLayout } from '../components/layout';
 import { Card, Badge, Button, Modal } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { MOCK_SHOP_ITEMS } from '../lib/mockData';
+import CurrencyShop from '../components/CurrencyShop';
 
 export default function ShopPage() {
   const { user, updateProfile } = useAuth();
+  const [shopMode, setShopMode] = useState<'items' | 'currency'>('items');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<typeof MOCK_SHOP_ITEMS[0] | null>(null);
   const [inventory, setInventory] = useState<string[]>(['s1']);
@@ -151,7 +153,7 @@ export default function ShopPage() {
         </motion.div>
 
         {/* Currency Display */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <div className="card-elevated rounded-xl px-5 py-3 flex items-center gap-3 flex-1 max-w-xs">
             <div className="w-10 h-10 bg-gradient-to-br from-rush-yellow to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
               <span className="text-xl">🪙</span>
@@ -172,6 +174,30 @@ export default function ShopPage() {
           </div>
         </div>
 
+        {/* Shop Mode Tabs */}
+        <div className="flex gap-3 mb-8">
+          <Button
+            variant={shopMode === 'items' ? 'primary' : 'outline'}
+            onClick={() => setShopMode('items')}
+            className="flex-1"
+          >
+            🛍️ Items y Cosméticos
+          </Button>
+          <Button
+            variant={shopMode === 'currency' ? 'primary' : 'outline'}
+            onClick={() => setShopMode('currency')}
+            className="flex-1"
+          >
+            💰 Monedas y Tokens
+          </Button>
+        </div>
+
+        {/* Currency Shop Mode */}
+        {shopMode === 'currency' && <CurrencyShop />}
+
+        {/* Items Shop Mode */}
+        {shopMode === 'items' && (
+          <>
         {/* Categories */}
         <div className="flex gap-3 overflow-x-auto pb-4 mb-8 scrollbar-hide">
           {categories.map(cat => (
@@ -544,6 +570,8 @@ export default function ShopPage() {
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
     </AppLayout>
   );
