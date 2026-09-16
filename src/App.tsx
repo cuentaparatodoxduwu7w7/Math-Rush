@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { GameProvider } from './contexts/GameContext';
 import { ProtectedRoute } from './components/layout';
@@ -40,7 +40,7 @@ function LoadingFallback() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <GameProvider>
           <Suspense fallback={<LoadingFallback />}>
@@ -145,6 +145,6 @@ export default function App() {
           </Suspense>
         </GameProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
