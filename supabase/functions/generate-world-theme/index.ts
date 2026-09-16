@@ -9,6 +9,9 @@ import { corsHeaders, handleCors } from '../_shared/cors.ts';
 import { authenticateUser } from '../_shared/auth.ts';
 import { validatePrompt, validateThemeResponse, validateMinigameResponse } from '../_shared/validation.ts';
 import { generateWorldDesign, isProviderConfigured } from '../_shared/ai-provider.ts';
+import { MemoryService } from '../_shared/memory-service.ts';
+import { MemoryProtectionService } from '../_shared/memory-protection.ts';
+import { MemoryLearningService } from '../_shared/memory-learning.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -149,32 +152,47 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 9. Get user preferences
-    const { data: preferences } = await supabase
-      .from('world_preferences')
-      .select('*')
-      .eq('user_id', user.userId)
-      .single();
+    // 9. Initialize memory services
+    const memoryService = new MemoryService(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const protectionService = new MemoryProtectionService();
+    const learningService = new MemoryLearningService(supabase);
 
-    // 10. Get relevant memory (private + approved global)
-    const { data: memory } = await supabase
-      .from('ai_memory')
-      .select('category, content')
-      .or(`and(user_id.eq.${user.userId},memory_type.eq.private),and(memory_type.eq.global,is_approved.eq.true)`)
-      .order('usage_count', { ascending: false })
-      .limit(10);
+    // 10. Validate prompt for security
+    const securityCheck = await protectionService.validateRequest(user.userId, promptValidation.data);
+    if (!securityCheck.isValid) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'SECURITY_CHECK_FAILED', 
+          message: securityCheck.error 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // 11. Call AI provider
+    // 11. Get comprehensive memory context
+    const memoryContext = await memoryService.getMemoryContext(user.userId, securityCheck.sanitizedPrompt!);
+
+    // 12. Detect patterns from user history
+    const patterns = await learningService.detectPatterns(user.userId);
+
+    // 13. Call AI provider with full context
     let aiResponse;
     try {
       aiResponse = await generateWorldDesign({
-        prompt: promptValidation.data,
-        userPreferences: preferences ? {
-          preferredColors: preferences.preferred_colors,
-          preferredStyles: preferences.preferred_styles,
-          preferredAnimations: preferences.preferred_animations,
-        } : undefined,
-        memory: memory || [],
+        prompt: securityCheck.sanitizedPrompt!,
+        userPreferences: memoryContext.userPreferences,
+        memory: [
+          ...memoryContext.recentGenerations.map(g => ({
+            category: 'recent_generation',
+            content: g,
+          })),
+          ...memoryContext.globalKnowledge.map(k => ({
+            category: k.category,
+            content: k.content,
+          })),
+          ...patterns,
+        ],
+        feedbackPatterns: memoryContext.feedbackPatterns,
         includeMinigame,
         difficulty,
       });
@@ -296,19 +314,27 @@ Deno.serve(async (req) => {
       success: true,
     });
 
-    // 17. Update memory with this generation
-    await supabase.from('ai_memory').insert({
-      user_id: user.userId,
-      memory_type: 'private',
-      category: 'generation',
-      content: {
-        prompt: promptValidation.data,
-        theme_name: aiResponse.name,
-        colors: aiResponse.theme,
-        timestamp: new Date().toISOString(),
-      },
-      confidence_score: 1.0,
-    });
+    // 17. Learn from this generation
+    // Assume generation was accepted if user didn't explicitly reject it
+    // In a real implementation, you'd track acceptance/rejection explicitly
+    await learningService.learnFromGeneration(
+      user.userId,
+      securityCheck.sanitizedPrompt!,
+      aiResponse,
+      true // Assume accepted for now
+    );
+
+    // 18. Store generation in memory service
+    await memoryService.storeGenerationMemory(
+      user.userId,
+      securityCheck.sanitizedPrompt!,
+      aiResponse,
+      {
+        duration_ms: Date.now() - startTime,
+        attempts_remaining: useToken || !can_generate ? attempts_remaining : attempts_remaining - 1,
+        tokens_used: useToken || !can_generate ? TOKEN_COST : 0,
+      }
+    );
 
     // 18. Return success response
     const duration = Date.now() - startTime;

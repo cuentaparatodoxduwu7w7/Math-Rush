@@ -15,11 +15,17 @@ export interface WorldDesignRequest {
     preferredColors?: string[];
     preferredStyles?: string[];
     preferredAnimations?: string[];
+    preferredThemes?: string[];
   };
   memory?: Array<{
     category: string;
     content: any;
   }>;
+  feedbackPatterns?: {
+    likedStyles?: string[];
+    dislikedStyles?: string[];
+    preferredComplexity?: string;
+  };
   includeMinigame?: boolean;
   difficulty?: string;
 }
@@ -143,7 +149,7 @@ function buildUserPrompt(request: WorldDesignRequest): string {
   let prompt = `Create a world theme based on this description: "${request.prompt}"`;
 
   if (request.userPreferences) {
-    prompt += '\n\nUser preferences:';
+    prompt += '\n\nUser preferences (learned from previous interactions):';
     if (request.userPreferences.preferredColors?.length) {
       prompt += `\n- Preferred colors: ${request.userPreferences.preferredColors.join(', ')}`;
     }
@@ -153,12 +159,53 @@ function buildUserPrompt(request: WorldDesignRequest): string {
     if (request.userPreferences.preferredAnimations?.length) {
       prompt += `\n- Preferred animations: ${request.userPreferences.preferredAnimations.join(', ')}`;
     }
+    if (request.userPreferences.preferredThemes?.length) {
+      prompt += `\n- Preferred themes: ${request.userPreferences.preferredThemes.join(', ')}`;
+    }
   }
 
+  // Add feedback patterns
+  if (request.feedbackPatterns) {
+    prompt += '\n\nFeedback patterns (what user likes/dislikes):';
+    if (request.feedbackPatterns.likedStyles?.length) {
+      prompt += `\n- Liked styles: ${request.feedbackPatterns.likedStyles.join(', ')}`;
+    }
+    if (request.feedbackPatterns.dislikedStyles?.length) {
+      prompt += `\n- Disliked styles: ${request.feedbackPatterns.dislikedStyles.join(', ')} (AVOID THESE)`;
+    }
+    if (request.feedbackPatterns.preferredComplexity) {
+      prompt += `\n- Preferred complexity: ${request.feedbackPatterns.preferredComplexity}`;
+    }
+  }
+
+  // Add relevant memory
   if (request.memory && request.memory.length > 0) {
-    prompt += '\n\nRelevant memory from previous interactions:';
-    request.memory.slice(0, 5).forEach((mem) => {
-      prompt += `\n- ${mem.category}: ${JSON.stringify(mem.content)}`;
+    prompt += '\n\nRelevant context from previous generations:';
+    
+    // Group memory by category for better organization
+    const groupedMemory: Record<string, any[]> = {};
+    request.memory.forEach((mem) => {
+      if (!groupedMemory[mem.category]) {
+        groupedMemory[mem.category] = [];
+      }
+      groupedMemory[mem.category].push(mem.content);
+    });
+
+    // Add each category
+    Object.entries(groupedMemory).forEach(([category, items]) => {
+      prompt += `\n\n${category.replace(/_/g, ' ').toUpperCase()}:`;
+      items.slice(0, 3).forEach((item) => {
+        // Format based on category
+        if (category === 'recent_generation') {
+          prompt += `\n- Previous generation: "${item.prompt_snippet || item.prompt}" → ${item.theme_name} (${item.style || 'unknown style'})`;
+        } else if (category === 'liked_pattern' || category === 'disliked_pattern') {
+          prompt += `\n- ${category === 'liked_pattern' ? 'Liked' : 'Disliked'}: ${item.style || 'unknown'} style`;
+        } else if (category === 'recurring_style' || category === 'recurring_theme') {
+          prompt += `\n- Recurring ${category.includes('style') ? 'style' : 'theme'}: ${item.style || item.theme} (used ${item.frequency} times)`;
+        } else {
+          prompt += `\n- ${JSON.stringify(item).substring(0, 150)}`;
+        }
+      });
     });
   }
 
