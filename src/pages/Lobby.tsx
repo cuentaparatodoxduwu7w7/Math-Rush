@@ -50,23 +50,103 @@ export default function LobbyPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Avatar name={user.nickname} level={levelInfo.level} size="lg" />
-            <div>
-              <h2 className="font-bold text-lg">{user.nickname}</h2>
-              <Badge color="orange">Nv. {levelInfo.level} — {levelInfo.name}</Badge>
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+        {/* Hero Banner with Characters */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-8 rounded-3xl overflow-hidden card-elevated"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-rush-orange/20 via-rush-purple/10 to-rush-blue/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          
+          {/* Floating particles */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 bg-rush-orange/30 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  y: [0, -30, 0],
+                  opacity: [0.3, 0.8, 0.3],
+                }}
+                transition={{
+                  duration: 3 + Math.random() * 2,
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="relative p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              {/* Character Illustrations */}
+              <div className="flex items-center gap-4">
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="relative"
+                >
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-rush-orange to-rush-yellow flex items-center justify-center shadow-2xl glow-orange">
+                    <img 
+                      src="https://image.qwenlm.ai/generated-images/006bfac9-68a0-4b22-8ce8-5aa78504e096/_result.png"
+                      alt="Cuy Matemático"
+                      className="w-20 h-20 md:w-28 md:h-28 object-cover rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<span class="text-5xl md:text-6xl">🐹</span>';
+                      }}
+                    />
+                  </div>
+                </motion.div>
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 3.5, repeat: Infinity, delay: 0.5 }}
+                  className="relative hidden md:block"
+                >
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rush-blue to-rush-purple flex items-center justify-center shadow-xl glow-purple">
+                    <img 
+                      src="https://image.qwenlm.ai/generated-images/4008da11-eb13-4253-b822-7c6ddae70000/_result.png"
+                      alt="Llama Blanca"
+                      className="w-16 h-16 object-cover rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<span class="text-4xl">🦙</span>';
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* User Info */}
+              <div className="flex-1 text-center md:text-left">
+                <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">
+                  ¡Hola, <span className="bg-gradient-to-r from-rush-orange to-rush-yellow bg-clip-text text-transparent">{user.nickname}</span>!
+                </h1>
+                <p className="text-gray-300 mb-3">¿Listo para continuar tu aventura matemática?</p>
+                <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                  <div className="flex items-center gap-2 bg-rush-yellow/20 px-3 py-1.5 rounded-full">
+                    <span className="text-lg">🪙</span>
+                    <span className="font-bold text-rush-yellow">{user.coins.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-rush-purple/20 px-3 py-1.5 rounded-full">
+                    <span className="text-lg">💎</span>
+                    <span className="font-bold text-rush-purple-light">{user.gems}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-rush-orange/20 px-3 py-1.5 rounded-full">
+                    <span className="text-lg">🔥</span>
+                    <span className="font-bold text-rush-orange">{user.streak} días</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-bold text-rush-yellow">🪙 {user.coins.toLocaleString()}</p>
-              <p className="text-xs text-rush-purple-light">💎 {user.gems}</p>
-            </div>
-          </div>
-        </div>
+        </motion.div>
 
         {/* Developer Banner */}
         {isDeveloper && (
@@ -107,19 +187,52 @@ export default function LobbyPage() {
 
         {/* RUSH NOW Button */}
         <motion.button
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.03, y: -2 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowModeSelect(true)}
-          className="w-full rounded-2xl p-6 mb-4 relative overflow-hidden"
+          className="w-full rounded-3xl p-8 mb-6 relative overflow-hidden group"
           style={{
             background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
-            boxShadow: '0 10px 40px rgba(249, 115, 22, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 15px 50px rgba(249, 115, 22, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
-          <span className="text-4xl mb-2 block relative z-10">⚡</span>
-          <h2 className="font-display text-2xl font-black relative z-10">RUSH NOW</h2>
-          <p className="text-white/80 text-sm mt-1 relative z-10">¿Cómo quieres entrenar?</p>
+          {/* Animated background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+          
+          {/* Floating particles */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-1 h-1 bg-white/40 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  y: [0, -50, 0],
+                  opacity: [0, 1, 0],
+                }}
+                transition={{
+                  duration: 2 + Math.random() * 2,
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="relative z-10 flex flex-col items-center">
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-6xl mb-3"
+            >
+              ⚡
+            </motion.div>
+            <h2 className="font-display text-3xl md:text-4xl font-black mb-2">RUSH NOW</h2>
+            <p className="text-white/90 text-base md:text-lg">¿Cómo quieres entrenar hoy?</p>
+          </div>
         </motion.button>
 
         {/* Scan Button */}

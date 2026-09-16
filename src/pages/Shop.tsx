@@ -64,36 +64,110 @@ export default function ShopPage() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="font-display text-4xl font-bold mb-2 bg-gradient-to-r from-rush-orange to-rush-yellow bg-clip-text text-transparent">
-                TIENDA
-              </h1>
-              <p className="text-gray-400">Personaliza tu experiencia Math Rush con skins, mascotas, fondos y efectos únicos</p>
+        {/* Hero Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-8 rounded-3xl overflow-hidden card-elevated"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-rush-orange/30 via-rush-purple/20 to-rush-blue/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          
+          {/* Floating particles */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(10)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 bg-rush-yellow/40 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  y: [0, -40, 0],
+                  opacity: [0.2, 0.8, 0.2],
+                  scale: [0.8, 1.2, 0.8],
+                }}
+                transition={{
+                  duration: 3 + Math.random() * 2,
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="relative p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              {/* Characters */}
+              <div className="flex items-center gap-3">
+                <motion.div
+                  animate={{ y: [0, -8, 0], rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="relative"
+                >
+                  <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-rush-orange to-rush-yellow flex items-center justify-center shadow-2xl glow-orange">
+                    <img 
+                      src="https://image.qwenlm.ai/generated-images/88ab4c3a-01d1-41c4-b17e-2e84faabf6ed/_result.png"
+                      alt="Cuy Gamer"
+                      className="w-16 h-16 md:w-24 md:h-24 object-cover rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<span class="text-4xl md:text-5xl">🐹</span>';
+                      }}
+                    />
+                  </div>
+                </motion.div>
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3.5, repeat: Infinity, delay: 0.5 }}
+                  className="relative hidden md:block"
+                >
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rush-purple to-rush-blue flex items-center justify-center shadow-xl glow-purple">
+                    <img 
+                      src="https://image.qwenlm.ai/generated-images/a10a7b6c-a6e8-4a96-99a6-ed451da3f033/_result.png"
+                      alt="Cuy Dorado"
+                      className="w-12 h-12 object-cover rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<span class="text-3xl">👑</span>';
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Title */}
+              <div className="flex-1 text-center md:text-left">
+                <h1 className="font-display text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-rush-orange via-rush-yellow to-rush-orange bg-clip-text text-transparent">
+                  TIENDA
+                </h1>
+                <p className="text-gray-300 text-base md:text-lg">
+                  Personaliza tu experiencia con skins, mascotas y efectos únicos
+                </p>
+              </div>
             </div>
           </div>
-          
-          {/* Currency Display */}
-          <div className="flex items-center gap-4">
-            <div className="card-glass rounded-xl px-5 py-3 flex items-center gap-3 flex-1 max-w-xs">
-              <div className="w-10 h-10 bg-gradient-to-br from-rush-yellow to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-xl">🪙</span>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Monedas Rush</p>
-                <p className="font-bold text-rush-yellow text-lg">{user.coins.toLocaleString()}</p>
-              </div>
+        </motion.div>
+
+        {/* Currency Display */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="card-elevated rounded-xl px-5 py-3 flex items-center gap-3 flex-1 max-w-xs">
+            <div className="w-10 h-10 bg-gradient-to-br from-rush-yellow to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-xl">🪙</span>
             </div>
-            <div className="card-glass rounded-xl px-5 py-3 flex items-center gap-3 flex-1 max-w-xs">
-              <div className="w-10 h-10 bg-gradient-to-br from-rush-purple to-purple-700 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-xl">💎</span>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Gemas</p>
-                <p className="font-bold text-rush-purple-light text-lg">{user.gems}</p>
-              </div>
+            <div>
+              <p className="text-xs text-gray-400">Monedas Rush</p>
+              <p className="font-bold text-rush-yellow text-lg">{user.coins.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="card-elevated rounded-xl px-5 py-3 flex items-center gap-3 flex-1 max-w-xs">
+            <div className="w-10 h-10 bg-gradient-to-br from-rush-purple to-purple-700 rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-xl">💎</span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Gemas</p>
+              <p className="font-bold text-rush-purple-light text-lg">{user.gems}</p>
             </div>
           </div>
         </div>
