@@ -11,8 +11,9 @@ export default function PlansPage() {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<typeof MOCK_PLANS[0] | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success' | 'failed' | 'cancelled'>('idle');
+  const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success' | 'cancelled'>('idle');
   const [showTestMode, setShowTestMode] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<string>('free');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   function handleSelectPlan(plan: typeof MOCK_PLANS[0]) {
@@ -24,10 +25,16 @@ export default function PlansPage() {
 
   async function handleCheckout() {
     setCheckoutStatus('processing');
+    // Simular procesamiento de demo
     await new Promise(resolve => setTimeout(resolve, 2000));
     setCheckoutStatus('success');
-    if (user && selectedPlan) {
-      updateProfile({ role: selectedPlan.id === 'teacher' ? 'teacher' : user.role });
+    
+    // Activar plan en modo demo
+    if (selectedPlan) {
+      setCurrentPlan(selectedPlan.id);
+      if (selectedPlan.id === 'teacher') {
+        updateProfile({ role: 'teacher' });
+      }
     }
   }
 
@@ -36,20 +43,26 @@ export default function PlansPage() {
     setTimeout(() => {
       setShowCheckout(false);
       setCheckoutStatus('idle');
+      setSelectedPlan(null);
     }, 1500);
   }
 
   function activateTestPlan(planId: string) {
     if (!isDeveloper) return;
-    const planNames: Record<string, string> = { 'rush': 'Rush', 'legend': 'Legend', 'teacher': 'Teacher' };
-    alert(`[MODO PRUEBAS] Plan ${planNames[planId]} activado.\n\nEste es un modo de prueba para developer.\nNo se procesó ningún pago real.`);
-    if (planId === 'teacher') updateProfile({ role: 'teacher' });
+    setCurrentPlan(planId);
+    if (planId === 'teacher') {
+      updateProfile({ role: 'teacher' });
+    } else if (planId === 'free') {
+      updateProfile({ role: 'student' });
+    }
+    setShowTestMode(false);
   }
 
   function resetToFree() {
     if (!isDeveloper) return;
-    alert('[MODO PRUEBAS] Volviendo a plan FREE.');
+    setCurrentPlan('free');
     updateProfile({ role: 'student' });
+    setShowTestMode(false);
   }
 
   const planIcons: Record<string, string> = {
@@ -101,6 +114,35 @@ export default function PlansPage() {
           </div>
         </div>
 
+        {/* Current Plan Indicator */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 card-glass rounded-2xl p-5"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-rush-orange to-rush-yellow rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+                {planIcons[currentPlan]}
+              </div>
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Tu plan actual</p>
+                <h3 className="font-display text-2xl font-bold">
+                  {MOCK_PLANS.find(p => p.id === currentPlan)?.name}
+                </h3>
+                {currentPlan !== 'free' && (
+                  <p className="text-xs text-rush-orange mt-1">
+                    ✓ Plan premium activo
+                  </p>
+                )}
+              </div>
+            </div>
+            {currentPlan !== 'free' && (
+              <Badge color="orange">PREMIUM</Badge>
+            )}
+          </div>
+        </motion.div>
+
         {/* Developer Banner */}
         {isDeveloper && (
           <motion.div
@@ -117,7 +159,7 @@ export default function PlansPage() {
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => setShowTestMode(true)}>
-                Modo Pruebas
+                🧪 Modo Pruebas
               </Button>
             </div>
           </motion.div>
@@ -143,6 +185,13 @@ export default function PlansPage() {
               )}
 
               <div className={`p-6 ${plan.highlighted ? 'pt-10' : ''}`}>
+                {/* Current Plan Badge */}
+                {currentPlan === plan.id && (
+                  <div className="absolute top-3 right-3">
+                    <Badge color="green">✓ ACTUAL</Badge>
+                  </div>
+                )}
+
                 {/* Icon */}
                 <div className="text-5xl mb-4">{planIcons[plan.id]}</div>
 
@@ -179,12 +228,12 @@ export default function PlansPage() {
 
                 {/* CTA */}
                 <Button
-                  variant={plan.highlighted ? 'primary' : 'outline'}
+                  variant={currentPlan === plan.id ? 'ghost' : plan.highlighted ? 'primary' : 'outline'}
                   className="w-full"
                   onClick={() => handleSelectPlan(plan)}
-                  disabled={plan.id === 'free'}
+                  disabled={plan.id === 'free' || currentPlan === plan.id}
                 >
-                  {plan.id === 'free' ? 'PLAN ACTUAL' : 'ELEGIR PLAN'}
+                  {currentPlan === plan.id ? '✓ PLAN ACTUAL' : plan.id === 'free' ? 'PLAN BÁSICO' : 'ELEGIR PLAN'}
                 </Button>
               </div>
             </motion.div>
@@ -231,6 +280,17 @@ export default function PlansPage() {
             <AnimatePresence mode="wait">
               {checkoutStatus === 'idle' && (
                 <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  {/* Demo Badge */}
+                  <div className="bg-rush-orange/10 border border-rush-orange/30 rounded-xl p-3 mb-5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🧪</span>
+                      <div>
+                        <p className="font-bold text-rush-orange text-sm">CHECKOUT DE DEMOSTRACIÓN</p>
+                        <p className="text-xs text-gray-400">Esta es una simulación. No se procesará ningún pago real.</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Plan Summary */}
                   <div className="card-glass rounded-xl p-5 mb-5">
                     <div className="flex items-center gap-3 mb-3">
@@ -263,16 +323,16 @@ export default function PlansPage() {
 
                   {/* Payment Method */}
                   <div className="card-glass rounded-xl p-4 mb-5">
-                    <h4 className="font-bold text-sm mb-3">Método de Pago</h4>
+                    <h4 className="font-bold text-sm mb-3">Método de Prueba</h4>
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Serás redirigido a Culqi</span>
-                      <span className="text-2xl">💳</span>
+                      <span className="text-gray-400">🧪 Modo Demo</span>
+                      <span className="text-2xl">🧪</span>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <Button variant="primary" className="w-full mb-3" size="lg" onClick={handleCheckout}>
-                    CONTINUAR AL PAGO
+                    🧪 ACTIVAR EN MODO DEMO
                   </Button>
                   <Button variant="ghost" className="w-full" onClick={handleCancel}>
                     Cancelar
@@ -304,8 +364,15 @@ export default function PlansPage() {
                   >
                     ✅
                   </motion.div>
-                  <p className="font-display text-2xl font-bold text-rush-green mb-2">¡Pago Exitoso!</p>
-                  <p className="text-sm text-gray-400 mb-6">Tu suscripción ha sido activada</p>
+                  <p className="font-display text-2xl font-bold text-rush-green mb-2">¡Plan Activado!</p>
+                  <p className="text-sm text-gray-400 mb-2">
+                    <span className="font-bold text-rush-orange">{selectedPlan?.name}</span> ha sido activado en modo demostración
+                  </p>
+                  <div className="bg-rush-orange/10 border border-rush-orange/30 rounded-xl p-3 mb-6">
+                    <p className="text-xs text-rush-orange">
+                      🧪 Esta es una activación de demostración. No se procesó ningún pago real.
+                    </p>
+                  </div>
                   <Button variant="primary" className="w-full" onClick={() => { setShowCheckout(false); setCheckoutStatus('idle'); navigate('/app'); }}>
                     Ir al Lobby
                   </Button>
@@ -319,51 +386,87 @@ export default function PlansPage() {
                   <p className="text-sm text-gray-400">No se procesó ningún cargo</p>
                 </motion.div>
               )}
-
-              {checkoutStatus === 'failed' && (
-                <motion.div key="failed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-8">
-                  <div className="text-6xl mb-4">⚠️</div>
-                  <p className="font-bold text-red-400 mb-2">Error en el Pago</p>
-                  <p className="text-sm text-gray-400 mb-4">Ups, algo salió mal. Intenta nuevamente.</p>
-                  <Button variant="primary" className="w-full" onClick={() => setCheckoutStatus('idle')}>
-                    Reintentar
-                  </Button>
-                </motion.div>
-              )}
             </AnimatePresence>
           </div>
         )}
       </Modal>
 
       {/* Developer Test Mode Modal */}
-      <Modal isOpen={showTestMode} onClose={() => setShowTestMode(false)} title="🛠️ Modo de Pruebas Developer">
+      <Modal isOpen={showTestMode} onClose={() => setShowTestMode(false)} title="🧪 Modo de Pruebas">
         <div className="space-y-4">
           <div className="bg-rush-orange/10 border border-rush-orange/30 rounded-xl p-3">
             <p className="text-xs text-rush-orange">
-              ⚠️ Este es un modo de prueba interno. NO procesa pagos reales.
+              ⚠️ Esta herramienta es solo para demostración. NO procesa pagos reales.
             </p>
           </div>
 
           <div>
-            <h4 className="font-bold text-sm mb-2">Activar Plan (Prueba)</h4>
-            <div className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full" onClick={() => activateTestPlan('rush')}>
-                Activar Rush Pass
-              </Button>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => activateTestPlan('legend')}>
-                Activar Legend Pass
-              </Button>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => activateTestPlan('teacher')}>
-                Activar Teacher
-              </Button>
+            <h4 className="font-bold text-sm mb-3">Plan Actual</h4>
+            <div className="card-glass rounded-xl p-3 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{planIcons[currentPlan]}</span>
+                <div className="flex-1">
+                  <p className="font-bold">{MOCK_PLANS.find(p => p.id === currentPlan)?.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {currentPlan === 'free' ? 'Plan básico' : 'Plan premium activo'}
+                  </p>
+                </div>
+                <Badge color={currentPlan === 'free' ? 'green' : 'orange'}>
+                  {currentPlan === 'free' ? 'ACTIVO' : 'PREMIUM'}
+                </Badge>
+              </div>
             </div>
           </div>
 
           <div>
-            <h4 className="font-bold text-sm mb-2">Resetear</h4>
-            <Button variant="ghost" size="sm" className="w-full" onClick={resetToFree}>
-              Volver a FREE
-            </Button>
+            <h4 className="font-bold text-sm mb-3">Cambiar Plan (Demo)</h4>
+            <div className="space-y-2">
+              <Button 
+                variant={currentPlan === 'free' ? 'ghost' : 'outline'} 
+                size="sm" 
+                className="w-full" 
+                onClick={() => activateTestPlan('free')}
+                disabled={currentPlan === 'free'}
+              >
+                🆓 Activar FREE
+              </Button>
+              <Button 
+                variant={currentPlan === 'rush' ? 'ghost' : 'outline'} 
+                size="sm" 
+                className="w-full" 
+                onClick={() => activateTestPlan('rush')}
+                disabled={currentPlan === 'rush'}
+              >
+                ⚡ Activar Rush Pass
+              </Button>
+              <Button 
+                variant={currentPlan === 'legend' ? 'ghost' : 'outline'} 
+                size="sm" 
+                className="w-full" 
+                onClick={() => activateTestPlan('legend')}
+                disabled={currentPlan === 'legend'}
+              >
+                👑 Activar Legend Pass
+              </Button>
+              <Button 
+                variant={currentPlan === 'teacher' ? 'ghost' : 'outline'} 
+                size="sm" 
+                className="w-full" 
+                onClick={() => activateTestPlan('teacher')}
+                disabled={currentPlan === 'teacher'}
+              >
+                👨‍🏫 Activar Teacher
+              </Button>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-rush-purple/20">
+            <h4 className="font-bold text-sm mb-3">Acciones Avanzadas</h4>
+            <div className="space-y-2">
+              <Button variant="ghost" size="sm" className="w-full text-red-400 hover:text-red-300" onClick={resetToFree}>
+                🔄 Restablecer cuenta a FREE
+              </Button>
+            </div>
           </div>
         </div>
       </Modal>
