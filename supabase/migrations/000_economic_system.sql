@@ -1,8 +1,10 @@
 -- ============================================================
--- MIGRACIÓN: Sistema Económico Completo
+-- MIGRACIÓN: Sistema Económico Completo (PRIORIDAD 0)
 -- ============================================================
 -- Fecha: 2024
 -- Descripción: Sistema de tres monedas (coins, gems, tokens) con ledger
+-- NOTA: Esta migración debe ejecutarse PRIMERO porque crea la tabla 'tokens'
+-- que es usada por otras migraciones
 -- ============================================================
 
 -- ============================================================
@@ -299,7 +301,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Función para gastar moneda (con ledger)
+-- Función para gastar moneda (con ledger) - CORREGIDA con SELECT FOR UPDATE
 CREATE OR REPLACE FUNCTION spend_currency(
   user_uuid UUID,
   currency TEXT,
@@ -331,8 +333,19 @@ BEGIN
     RAISE EXCEPTION 'Amount must be positive';
   END IF;
   
-  -- Obtener balance actual
-  current_balance := get_currency_balance(user_uuid, currency);
+  -- Obtener balance actual con bloqueo para prevenir condiciones de carrera
+  IF currency = 'coins' THEN
+    SELECT coins INTO current_balance FROM profiles WHERE id = user_uuid FOR UPDATE;
+  ELSIF currency = 'gems' THEN
+    SELECT gems INTO current_balance FROM profiles WHERE id = user_uuid FOR UPDATE;
+  ELSIF currency = 'tokens' THEN
+    SELECT balance INTO current_balance FROM tokens WHERE user_id = user_uuid FOR UPDATE;
+    IF current_balance IS NULL THEN
+      current_balance := 0;
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Invalid currency type';
+  END IF;
   
   -- Verificar saldo suficiente
   IF current_balance < amount THEN

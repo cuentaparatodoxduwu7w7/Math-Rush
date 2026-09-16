@@ -1,26 +1,15 @@
 -- ============================================================
--- MIGRACIÓN: Diseñador de Mundo - IA
+-- MIGRACIÓN: Diseñador de Mundo - IA (Consolidada)
 -- ============================================================
 -- Fecha: 2024
 -- Descripción: Sistema completo para personalización de lobby con IA
+-- NOTA: La tabla 'tokens' se crea en 003_economic_system.sql
 -- ============================================================
 
 -- ============================================================
--- 1. TABLA: tokens
+-- 1. TABLA: token_transactions (específico para Diseñador de Mundo)
 -- ============================================================
--- Saldo de tokens del usuario para intentos extra de IA
-CREATE TABLE IF NOT EXISTS tokens (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL UNIQUE,
-  balance INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
-  last_updated TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ============================================================
--- 2. TABLA: token_transactions
--- ============================================================
--- Ledger completo de movimientos de tokens para auditoría
+-- Ledger específico para movimientos de tokens del Diseñador de Mundo
 CREATE TABLE IF NOT EXISTS token_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
@@ -42,7 +31,7 @@ CREATE TABLE IF NOT EXISTS token_transactions (
 );
 
 -- ============================================================
--- 3. TABLA: world_themes
+-- 2. TABLA: world_themes
 -- ============================================================
 -- Temas personalizados generados por IA
 CREATE TABLE IF NOT EXISTS world_themes (
@@ -80,7 +69,7 @@ CREATE TABLE IF NOT EXISTS world_themes (
 );
 
 -- ============================================================
--- 4. TABLA: world_preferences
+-- 3. TABLA: world_preferences
 -- ============================================================
 -- Preferencias actuales del usuario
 CREATE TABLE IF NOT EXISTS world_preferences (
@@ -105,7 +94,7 @@ CREATE TABLE IF NOT EXISTS world_preferences (
 );
 
 -- ============================================================
--- 5. TABLA: world_minigames
+-- 4. TABLA: world_minigames
 -- ============================================================
 -- Mini-juegos generados dentro de los temas
 CREATE TABLE IF NOT EXISTS world_minigames (
@@ -136,7 +125,7 @@ CREATE TABLE IF NOT EXISTS world_minigames (
 );
 
 -- ============================================================
--- 6. TABLA: ai_memory
+-- 5. TABLA: ai_memory
 -- ============================================================
 -- Memoria de la IA (privada del usuario y global aprobada)
 CREATE TABLE IF NOT EXISTS ai_memory (
@@ -162,7 +151,7 @@ CREATE TABLE IF NOT EXISTS ai_memory (
 );
 
 -- ============================================================
--- 7. TABLA: ai_feedback
+-- 6. TABLA: ai_feedback
 -- ============================================================
 -- Feedback del usuario sobre generaciones de IA
 CREATE TABLE IF NOT EXISTS ai_feedback (
@@ -185,7 +174,7 @@ CREATE TABLE IF NOT EXISTS ai_feedback (
 );
 
 -- ============================================================
--- 8. TABLA: world_attempts
+-- 7. TABLA: world_attempts
 -- ============================================================
 -- Registro de intentos de generación
 CREATE TABLE IF NOT EXISTS world_attempts (
@@ -211,9 +200,6 @@ CREATE TABLE IF NOT EXISTS world_attempts (
 -- ============================================================
 -- ÍNDICES PARA PERFORMANCE
 -- ============================================================
-
--- Tokens
-CREATE INDEX IF NOT EXISTS idx_tokens_user ON tokens(user_id);
 
 -- Token transactions
 CREATE INDEX IF NOT EXISTS idx_token_transactions_user ON token_transactions(user_id);
@@ -252,7 +238,6 @@ CREATE INDEX IF NOT EXISTS idx_world_attempts_period ON world_attempts(period_st
 -- ============================================================
 
 -- Habilitar RLS en todas las tablas nuevas
-ALTER TABLE tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE token_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE world_themes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE world_preferences ENABLE ROW LEVEL SECURITY;
@@ -260,25 +245,6 @@ ALTER TABLE world_minigames ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_memory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE world_attempts ENABLE ROW LEVEL SECURITY;
-
--- ============================================================
--- POLÍTICAS RLS: tokens
--- ============================================================
-
--- Usuarios pueden ver sus propios tokens
-CREATE POLICY "Users can view own tokens"
-  ON tokens FOR SELECT
-  USING (auth.uid() = user_id);
-
--- Usuarios pueden actualizar sus propios tokens (solo via funciones)
-CREATE POLICY "Users can update own tokens"
-  ON tokens FOR UPDATE
-  USING (auth.uid() = user_id);
-
--- Solo el sistema puede insertar tokens (via Edge Functions)
-CREATE POLICY "System can insert tokens"
-  ON tokens FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================
 -- POLÍTICAS RLS: token_transactions
@@ -547,7 +513,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Función para usar tokens
+-- Función para usar tokens (CORREGIDA con SELECT FOR UPDATE)
 CREATE OR REPLACE FUNCTION use_tokens(
   user_uuid UUID,
   amount INTEGER,
@@ -560,10 +526,11 @@ DECLARE
   current_balance INTEGER;
   new_balance INTEGER;
 BEGIN
-  -- Obtener saldo actual
+  -- Obtener saldo actual con bloqueo para prevenir condiciones de carrera
   SELECT balance INTO current_balance
   FROM tokens
-  WHERE user_id = user_uuid;
+  WHERE user_id = user_uuid
+  FOR UPDATE;
   
   -- Si no existe, crear con saldo 0
   IF NOT FOUND THEN
@@ -608,7 +575,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Función para comprar tokens con gemas
+-- Función para comprar tokens con gemas (CORREGIDA con SELECT FOR UPDATE)
 CREATE OR REPLACE FUNCTION purchase_tokens_with_gems(
   user_uuid UUID,
   gems_amount INTEGER
@@ -627,9 +594,9 @@ DECLARE
   new_tokens INTEGER;
   exchange_rate INTEGER := 10; -- 10 gemas = 1 token (ajustable)
 BEGIN
-  -- Obtener saldos actuales
-  SELECT gems INTO current_gems FROM profiles WHERE id = user_uuid;
-  SELECT balance INTO current_tokens FROM tokens WHERE user_id = user_uuid;
+  -- Obtener saldos actuales con bloqueo para prevenir condiciones de carrera
+  SELECT gems INTO current_gems FROM profiles WHERE id = user_uuid FOR UPDATE;
+  SELECT balance INTO current_tokens FROM tokens WHERE user_id = user_uuid FOR UPDATE;
   
   -- Si no existe tokens, crear
   IF NOT FOUND THEN
@@ -754,11 +721,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_tokens_updated_at
-  BEFORE UPDATE ON tokens
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_world_themes_updated_at
   BEFORE UPDATE ON world_themes
   FOR EACH ROW
@@ -783,8 +745,7 @@ CREATE TRIGGER update_ai_memory_updated_at
 -- COMENTARIOS PARA DOCUMENTACIÓN
 -- ============================================================
 
-COMMENT ON TABLE tokens IS 'Saldo de tokens del usuario para intentos extra de IA';
-COMMENT ON TABLE token_transactions IS 'Ledger completo de movimientos de tokens para auditoría';
+COMMENT ON TABLE token_transactions IS 'Ledger específico para movimientos de tokens del Diseñador de Mundo';
 COMMENT ON TABLE world_themes IS 'Temas personalizados generados por IA para el lobby';
 COMMENT ON TABLE world_preferences IS 'Preferencias actuales del usuario y control de intentos';
 COMMENT ON TABLE world_minigames IS 'Mini-juegos generados dentro de los temas personalizados';
@@ -792,7 +753,6 @@ COMMENT ON TABLE ai_memory IS 'Memoria de la IA (privada del usuario y global ap
 COMMENT ON TABLE ai_feedback IS 'Feedback del usuario sobre generaciones de IA';
 COMMENT ON TABLE world_attempts IS 'Registro de intentos de generación por período';
 
-COMMENT ON COLUMN tokens.balance IS 'Saldo actual de tokens (no negativo)';
 COMMENT ON COLUMN token_transactions.type IS 'Tipo de transacción: purchase, use, bonus, refund, admin_adjust, initial_grant';
 COMMENT ON COLUMN token_transactions.amount IS 'Cantidad de tokens (positivo para entrada, negativo para salida)';
 COMMENT ON COLUMN token_transactions.balance_after IS 'Saldo después de la transacción para auditoría';
