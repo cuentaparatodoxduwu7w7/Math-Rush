@@ -5,6 +5,7 @@ import { Card, Button, Badge, Modal } from '../components/ui';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 import { ASSETS } from '../lib/assets';
+import WorldDesigner from '../components/WorldDesigner';
 
 // Estados de la máquina de estados
 type GenerationState = 'idle' | 'generating' | 'success' | 'error' | 'cancelled';
@@ -376,20 +377,25 @@ export default function AiLabPage() {
               <span>Volver a herramientas</span>
             </button>
 
-            {/* Tool Header */}
-            <div className="card-glass rounded-2xl p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <span className="text-5xl">{tools.find(t => t.id === selectedTool)?.icon}</span>
-                <div>
-                  <h2 className="font-display text-2xl font-bold">
-                    {tools.find(t => t.id === selectedTool)?.name}
-                  </h2>
-                  <p className="text-gray-400 text-sm">
-                    {tools.find(t => t.id === selectedTool)?.fullDesc}
-                  </p>
+            {/* World Designer - Nuevo componente completo */}
+            {selectedTool === 'world' ? (
+              <WorldDesigner onClose={() => setSelectedTool(null)} />
+            ) : (
+              <>
+                {/* Tool Header */}
+                <div className="card-glass rounded-2xl p-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <span className="text-5xl">{tools.find(t => t.id === selectedTool)?.icon}</span>
+                    <div>
+                      <h2 className="font-display text-2xl font-bold">
+                        {tools.find(t => t.id === selectedTool)?.name}
+                      </h2>
+                      <p className="text-gray-400 text-sm">
+                        {tools.find(t => t.id === selectedTool)?.fullDesc}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
             {/* Error Message */}
             <AnimatePresence>
@@ -905,6 +911,8 @@ export default function AiLabPage() {
                   ))}
                 </div>
               </motion.div>
+            )}
+              </>
             )}
           </motion.div>
         )}
